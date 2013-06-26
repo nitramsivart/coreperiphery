@@ -49,61 +49,22 @@ def make_2core(A):
 
 G = nx.read_gml('karate.gml')
 A = np.array(nx.adjacency_matrix(G))
-#A = make_2core(A)
-#G = nx.Graph(A)
+A = make_2core(A)
+G = nx.Graph(A)
 #A = generate_tree()
 #G = nx.Graph(A)
 B, edges = cavity(A, True)
 
 
-'''
-q = 2
-n = len(G.nodes())
-gamma =[0.5,0.5]
-omega =[(0.25,0.04),(0.04,.25)]
-tmax = 80
-ass,phi,gamma,omega,messages = bp(gamma,omega,A,tmax)
-
-for u in range(5):
-  s = ""
-  for v in range(5):
-    s += "%d -> %d: " % (u,v)
-    for r in range(q):
-      s += "%f, " % messages[u][v][r]
-    s += '\n'
-  print s,
-
-nx.draw(G,node_color =ass)
-plt.show()
-'''
 one = np.ones([len(B),len(B)])/len(B)
-#print one
-m = sage.all.matrix(B-one)
-values = np.array(m.eigenvalues())
-#print values
-vectors = m.eigenvectors_right()
-'''
-#print vectors
-first = values.argmax()
-f1 = open('vectors.txt', 'w+')
-for v in vectors:
-  f1.write(str(v))
-f1.close()
-'''
-'''
-print values[first], vectors[first]
-print sum(B.dot(vectors[first]))
-print sum(vectors[first])
-'''
-#print B.dot(np.ones([len(B)]))
+m = sage.all.matrix(B)
+vector = m.eigenvectors_right()[1][1][0]
 
 
-#values[first] = 0
-second = values.argmax()
-#print values[second], vectors[second]
+
 colors = np.zeros([len(A)])
-#counts = np.zeros([len(A)])
-for i, e in enumerate(vectors[second][1][0]):
+
+for i, e in enumerate(vector):
   colors[edges[i][1]] += e
 
 print colors
