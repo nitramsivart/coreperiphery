@@ -1,0 +1,20 @@
+\documentclass{article}
+\usepackage{amsmath, amssymb}
+\title{Derivation of belief propagation equations for community / core-periphery structure}
+\author{Travis Martin}
+\begin{document}
+\maketitle
+$\psi_r^{u \rightarrow v}$ is the marginal probability that node $u$ is type $r$ in the absence of $v$, given the marginal probabilities for all other nodes besides $v$ and knowledge about the adjacency matrix. Let $I$ be the information: $(\forall w \neq u,v, \forall t:\psi_{t}^{w \rightarrow u}) \land A \land v\text{ is absent}$. Then
+$$\psi_r^{u\rightarrow v} = P(t_u = r \mid I)$$
+
+We sum over all possible type configurations ($\{w'\}$) for nodes which don't include $u$ and $v$. This is OK because each $\{w'\}$ is mutually exclusive.
+$$ = \sum_{\{w'\}} P(t_u = r \mid \{w'\} \land I) P(\{w'\} \mid I)$$
+
+We first expand the first probability as a product of independent probabilities (by our tree assumption).
+$$ = \sum_{\{w'\}} \left[\prod_{w \in \{w'\}} f(t_u = r \mid t_w \land A_{uw})\right] P(\{w'\} \mid I)$$
+
+We next expand the right term as a product of $\psi's$. Each $\psi_t^{w\rightarrow u}$ is unaffected by $I$: the only difference between $I$ and the information $\psi_t^{w\rightarrow u}$ is conditional on, $I'$, is that $I$ includes the absence of $v$ and $I'$ includes the absence of $u$. However, $\psi_t^{w\rightarrow u}$ is independent of $u$ by assumption and independent of $v$ by our treelike factor graph assumption (note the community detection factor graph is definitely not treelike: the influence of non-edges causes the factor graph to be a clique. However, the BP result is only for treelike factor graphs. I believe this is where our derivation fell through. Since our factor graph isn't treelike, the derivation isn't exact (but is pretty close, because the influence of $v$ should be minimal).
+$$ = \sum_{\{w'\}} \left[\prod_{w \in \{w'\}} f(t_u = r \mid t_w \land A_{uw}) \psi_{t_w}^{w \rightarrow u}\right]$$
+
+The rest of the derivation should just be rearranging.
+\end{document}
