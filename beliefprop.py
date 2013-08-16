@@ -12,7 +12,7 @@ def edge_prob(adj, omega):
   assert 0 <= omega <= 1, omega
   assert adj == 1 or adj == 0, adj
   #return (omega**adj)*np.exp(-omega)
-  return omega if adj == 1 else return 1.-omega
+  return omega if adj == 1 else 1.-omega
 
 
 # adj is the adjacency matrix of the graph
@@ -23,31 +23,41 @@ def update_messages(adj, messages, omega, gamma):
   new_messages = np.copy(messages)
   n = len(messages) # number of nodes
   k = len(messages[0][0]) # number of types
-  for u, v, r in it.product(range(n), range(n), range(k)):
-    # here we calculate the message passed from u->v, giving probability
-    # that u is type r, without the presence of v
+  for u, v in it.product(range(n), range(n)):
+    # here we calculate the message passed from u->v, for each type r
+    # gives probability that u is type r, without the presence of v
     if u == v:
       continue
-    prod_total = 0.
-    for w in range(n):
-      if w == u or w == v:
-        continue
 
-      sum_total = 0.
-      for s in range(k):
-        assert 0 <= messages[w][u][s] <= 1
-        sum_total += messages[w][u][s] * edge_prob(adj[w][u], omega[r][s])
-      assert sum_total <= 1
-      prod_total += np.log(sum_total)
-    new_messages[u][v][r] = gamma[r]*np.exp(prod_total)
+    for r in range(k):
+      prod_total = 0.
+      for w in range(n):
+        if w == u or w == v:
+          continue
+
+        sum_total = 0.
+        for s in range(k):
+          assert 0 <= messages[w][u][s] <= 1
+          sum_total += new_messages[w][u][s] * edge_prob(adj[w][u], omega[r][s])
+        assert 0 <= sum_total <= 1
+        prod_total += np.log(sum_total)
+      new_messages[u][v][r] = gamma[r]*np.exp(prod_total)
+
+    Z = sum(new_messages[u][v])
+    new_messages[u][v] = [msg/Z for msg in new_messages[u][v]]
+    assert 0 <= new_messages[u][v][0] <= 1, new_messages[u][v][0]
+  return new_messages
     
   # normalize
   for u, v in it.product(range(n), range(n)):
     if u == v:
       continue
     sum_total = sum(new_messages[u][v])
+    assert sum_total > 0
+    #sum_total = sum(messages[u][v])
     for r in range(k):
       new_messages[u][v][r] /= sum_total
+      #messages[u][v][r] /= sum_total
       assert 0 <= new_messages[u][v][r] <= 1, new_messages[u][v][r]
   return new_messages
 
@@ -140,6 +150,16 @@ def make_graph(n1, n2, p11, p12, p22):
 
   return mat
 
+# returns a graph where all n1 and n2 nodes
+# are indistinguishable in terms of degree
+def fixed_deg_graph(n1, n2, p11, p12, p22):
+  size = n1+n2
+  mat = np.zeros((size,size))
+  for i in range(size):
+    for j in range(size):
+      return None
+      
+
 
 def make_complete_graph(nodes):
   mat = np.zeros((nodes, nodes))
@@ -147,13 +167,16 @@ def make_complete_graph(nodes):
     mat[i][j] = 1 if i != j else 1
   return mat
 
-
 def bp(gamma, omega, adj, tmax):
   nodes = len(adj)
   types = len(gamma)
   messages = np.zeros([nodes,nodes,types])
   for u,v in it.product(range(nodes), range(nodes)):
-    a = .49
+    
+    #a = .9 if u < 15 or u in [17,18,20,22,31] else .1
+    a = .1 if u in [0,1,2,32,33] else .5
+    a = .50001
+    a = .5
     messages[u][v][0] = a
     messages[u][v][1] = 1-a
   for i in range(tmax):
@@ -161,7 +184,117 @@ def bp(gamma, omega, adj, tmax):
     joint_dist = get_joint_dist(adj, messages, omega)
     message_field = get_message_field(adj, messages, omega, gamma)
     omega, gamma = update_parameters(adj, messages, message_field, joint_dist)
+    #print message_field
+    print omega
   ass = [max(enumerate(l), key=operator.itemgetter(1))[0] 
              for l in message_field]
   ass = [l[0] for l in message_field] 
   return ass, message_field, gamma, omega, messages
+
+def graphbp(gamma, omega, adj, tmax):
+  nodes = len(adj)
+  types = len(gamma)
+  messages = np.zeros([nodes,nodes,types])
+  for u,v in it.product(range(nodes), range(nodes)):
+    a = random.random()
+    messages[u][v][0] = a
+    messages[u][v][1] = 1-a
+  xcoords = []
+  ycoords = []
+  message_field = get_message_field(adj, messages, omega, gamma)
+  for i in range(tmax):
+    print i
+    newx = sum(message_field[:(nodes/2)])[0]
+    newy = sum(message_field[(nodes/2):])[1]
+    print newx
+    print newy
+    xcoords.append(newx)
+    ycoords.append(newy)
+    messages = update_messages(adj, messages, omega, gamma)
+    joint_dist = get_joint_dist(adj, messages, omega)
+    message_field = get_message_field(adj, messages, omega, gamma)
+  return xcoords, ycoords
+
+def linear_expansion(gamma, omega, adj, perturb):
+  nodes = len(adj)
+  types = len(gamma)
+  messages = np.zeros([nodes,nodes,types])
+  for u,v in it.product(range(nodes), range(nodes)):
+    a = .49# + perturb[u] * .001
+    messages[u][v][0] = a
+    messages[u][v][1] = 1-a
+  message_field = get_message_field(adj, messages, omega, gamma)
+
+  for i in range(0):
+    messages = update_messages(adj, messages, omega, gamma)
+    joint_dist = get_joint_dist(adj, messages, omega)
+    message_field = get_message_field(adj, messages, omega, gamma)
+    omega, gamma = update_parameters(adj, messages, message_field, joint_dist)
+  return message_field, gamma, omega, messages
+
+def back_bp(gamma, omega, adj, tmax):
+  nodes = len(adj)
+  types = len(gamma)
+  messages = np.zeros([nodes,nodes,types])
+  difference = None
+  for u,v in it.product(range(nodes), range(nodes)):
+    
+    #a = .9 if u < 15 or u in [17,18,20,22,31] else .1
+    a = .5
+    messages[u][v][0] = a
+    messages[u][v][1] = 1-a
+  for i in range(tmax):
+    #print 'mes', messages
+    try:
+      new_messages = update_messages(adj, messages, omega, gamma)
+      #print 'new_mes', new_messages
+      difference = (new_messages-messages)/10.
+      #print 'diff', difference
+      messages = messages - difference
+      for u,v in it.product(range(nodes), range(nodes)):
+        if messages[u][v][0] < 0:
+          messages[u][v][0] = 0
+          messages[u][v][1] = 1
+        elif messages[u][v][0] > 1:
+          messages[u][v][0] = 1
+          messages[u][v][1] = 0
+
+      #print 'mes', messages
+      #joint_dist = get_joint_dist(adj, messages, omega)
+      message_field = get_message_field(adj, messages, omega, gamma)
+      #omega, gamma = update_parameters(adj, messages, message_field, joint_dist)
+      print 'mes_field\n', message_field
+    except AssertionError:
+      print "assertion error"
+      #print messages
+      exit(1)
+  #print difference
+  ass = [max(enumerate(l), key=operator.itemgetter(1))[0] 
+             for l in message_field]
+  ass = [l[0] for l in message_field] 
+  return ass, message_field, messages
+
+def bp_find_zeros(gamma, omega, adj, tmax):
+  nodes = len(adj)
+  types = len(gamma)
+  messages = np.zeros([nodes,nodes,types])
+  difference = None
+  min_mess = None
+  min_sumdiff = nodes * nodes
+  for i in range(tmax):
+    print i
+    for u,v in it.product(range(nodes), range(nodes)):
+      a = random.random()
+      messages[u][v][0] = a
+      messages[u][v][1] = 1-a
+    new_messages = update_messages(adj, messages, omega, gamma)
+    difference = (new_messages-messages)
+    sumdiff = sum(sum(sum(difference)))
+    if sumdiff < min_sumdiff:
+      min_mess = messages
+      min_sumdiff = sumdiff
+  message_field = get_message_field(adj, min_mess, omega, gamma)
+  ass = [max(enumerate(l), key=operator.itemgetter(1))[0] 
+             for l in message_field]
+  ass = [l[0] for l in message_field] 
+  return ass, message_field, messages
