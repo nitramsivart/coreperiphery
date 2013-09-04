@@ -21,24 +21,24 @@ def edge_prob(adj, omega):
 # gamma is the prior on probability of being in a certain group
 def update_messages(adj, messages, omega, gamma):
   new_messages = np.copy(messages)
-  n = len(messages) # number of nodes
-  k = len(messages[0][0]) # number of types
-  for u, v in it.product(range(n), range(n)):
+  n_range = xrange(len(messages)) # number of nodes
+  k_range = xrange(len(messages[0][0])) # number of types
+  for u, v in it.product(n_range, n_range):
     # here we calculate the message passed from u->v, for each type r
     # gives probability that u is type r, without the presence of v
     if u == v:
       continue
 
-    for r in range(k):
+    for r in k_range:
       prod_total = 0.
-      for w in range(n):
+      for w in n_range:
         if w == u or w == v:
           continue
 
         sum_total = 0.
-        for s in range(k):
+        for s in k_range:
           assert 0 <= messages[w][u][s] <= 1
-          sum_total += new_messages[w][u][s] * edge_prob(adj[w][u], omega[r][s])
+          sum_total += new_messages[w][u][s] * (omega[r][s] if adj[w][u] is 1 else 1.-omega[r][s])#edge_prob(adj[w][u], omega[r][s])
         assert 0 <= sum_total <= 1
         prod_total += np.log(sum_total)
       new_messages[u][v][r] = gamma[r]*np.exp(prod_total)
@@ -191,6 +191,21 @@ def bp(gamma, omega, adj, tmax):
   ass = [l[0] for l in message_field] 
   return ass, message_field, gamma, omega, messages
 
+def bp_fixed_params(gamma, omega, adj, tmax):
+  nodes = len(adj)
+  types = len(gamma)
+  messages = np.zeros([nodes,nodes,types])
+  for u,v in it.product(range(nodes), range(nodes)):
+    a = .5 + (.0001 if u % 2 == 0 else -0.0001)
+    messages[u][v][0] = a
+    messages[u][v][1] = 1-a
+  for i in range(tmax):
+    messages = update_messages(adj, messages, omega, gamma)
+  message_field = get_message_field(adj, messages, omega, gamma)
+  ass = [l[0] for l in message_field] 
+  return ass
+
+# attempt to follow the progress of the bp and see convergence
 def graphbp(gamma, omega, adj, tmax):
   nodes = len(adj)
   types = len(gamma)

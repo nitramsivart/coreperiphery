@@ -1,62 +1,65 @@
 from networkx import *
+from custom_networkx import *
 import scipy.sparse.linalg as lin
 import scipy.sparse as sp
 import numpy as np
 import matplotlib.pylab as plt
 import time
 import glob
+import random
 from datetime import datetime
+import cProfile
 
-def check_crossover():
-  runs = 100
-  samples = 200
+
+def check_crossover(hashi=False):
+  runs = 1
+  samples = 100
   eig1 = [0] * samples
   eig2 = [0] * samples
   eig3 = [0] * samples
   f = open('eig-data-%d.txt' % (time.time() % 10000), 'w+')
+  hubrange = range(50,150)
   for i in range(runs):
-    for k in range(1,samples+1):
+    for index, hubsize in enumerate(hubrange):
+      print i, hubsize
       c = 10
-      n = 10000
+      n = 50000
       G = fast_gnp_random_graph(n, c/float(n))
-      print "done making graph"
 
-      for i in range(1,k+1):
-        G.add_edge(0, i)
-      print "done making hub"
+      for j in range(1,hubsize+1):
+        G.add_edge(0, j)
 
       A = to_scipy_sparse_matrix(G, dtype='d')
-      print "done with sparse matrix"
-      ''' Below here was how we did the e-vector centrality
-      eig = lin.eigs(A, k=2, which='LR')
-      '''
-      #this is hashimoto style
-      I = sp.identity(A.shape[0])
-      I_minus_D = sp.lil_matrix(A.shape)
-      for node,deg in G.degree_iter():
-        I_minus_D[node,node] = 1.0-deg
-      print "done making submatrices"
 
-      crazy = sp.bmat([[None,I],[I_minus_D,A]])
-      print "done making crazy"
-      eig = lin.eigsh(crazy, k=3, which="LA")
-      print eig[0]
-      eig1[k-1] += abs(eig[0][0].real)
-      eig2[k-1] += abs(eig[0][1].real)
-      eig3[k-1] += abs(eig[0][2].real)
+      if not hashi:
+        eig = lin.eigsh(A, k=2, which='LA', return_eigenvectors=False)
+      else:
+        #this is hashimoto style
+        I = sp.identity(A.shape[0])
+        I_minus_D = sp.lil_matrix(A.shape)
+        for node,deg in G.degree_iter():
+          I_minus_D[node,node] = 1.0-deg
+
+        crazy = sp.bmat([[None,I],[I_minus_D,A]])
+        print "done making crazy"
+        eig = lin.eigs(crazy, k=1, which="LR", return_eigenvectors=False)
+      eig1[index] += abs(eig[0].real)
+      eig2[index] += abs(eig[1].real)
+      #eig3[k-1] += abs(eig[2].real)
   for i in range(samples):
     eig1[i] /= float(runs)
     eig2[i] /= float(runs)
-    eig3[i] /= float(runs)
+    #eig3[i] /= float(runs)
     f.write(str(eig1[i]) + ' ' + str(eig2[i]) + '\n')
 
   f.close()
-  plt.plot(eig1)
-  plt.plot(eig2)
-  plt.plot(eig3)
+  #plt.ylim(6,22)
+  plt.plot(hubrange, eig1)
+  plt.plot(hubrange, eig2)
+  #plt.plot(eig3)
   plt.show()
 
-def plot_localization():
+def plot_localization(hashi=False):
   runs = 50
   samples = 200
   heights = [0] * samples
@@ -72,19 +75,22 @@ def plot_localization():
         G.add_edge(0, j)
       A = to_scipy_sparse_matrix(G, dtype='d')
 
-      #eig = lin.eigs(A, k=1, which='LR')
+      if not hashi:
+        eig = lin.eigsh(A, k=1, which='LA')
+        height = eig[1][0]
+        base = sum(map(lambda x : x*x, eig[1][1:]))
+        heights[k-1] += height**2 / base
+      else:
+        I = sp.identity(A.shape[0])
+        I_minus_D = sp.lil_matrix(A.shape)
+        for node,deg in G.degree_iter():
+          I_minus_D[node,node] = 1.0-deg
+        crazy = sp.bmat([[None,I],[I_minus_D,A]])
 
-      #this is hashimoto style
-      I = sp.identity(A.shape[0])
-      I_minus_D = sp.lil_matrix(A.shape)
-      for node,deg in G.degree_iter():
-        I_minus_D[node,node] = 1.0-deg
-      crazy = sp.bmat([[None,I],[I_minus_D,A]])
-
-      eig = lin.eigsh(crazy, k=1, which="LA")
-      height = eig[1][n]
-      base = sum(map(lambda x : x*x, eig[1][n+1:2*n]))
-      heights[k-1] += height**2 / base
+        eig = lin.eigs(crazy, k=1, which="LA")
+        height = eig[1][n]
+        base = sum(map(lambda x : x*x, eig[1][n+1:2*n]))
+        heights[k-1] += height**2 / base
 
   for i in range(samples):
     heights[i] /= float(runs)
@@ -93,6 +99,77 @@ def plot_localization():
   #plt.ylim(0,1)
   plt.plot(heights)
   plt.show()
+
+def localization_correlation():
+  f = open('localization-correlation.txt', 'w+')
+
+  vals1 = [{},{}]
+  counts1 = [{},{}]
+  vals2 = [{},{}]
+  counts2 = [{},{}]
+  var10 = [[[],[]],[[],[]]]
+  c = 10
+  n = 2000000
+  G = fast_gnp_random_graph(n, c/float(n))
+
+  eig = [None,None]
+  for index, hubsize in enumerate([50, 160]):
+
+    for j in range(1,hubsize+1):
+      G.add_edge(0, j)
+    A = to_scipy_sparse_matrix(G, dtype='d')
+    print 'done building graph'
+
+    eig[index] = lin.eigsh(A, k=2, which='LA')
+    print eig[index][0]
+    print 'done getting eigs'
+    for pos,elem in enumerate(eig[index][1][:,0][hubsize+1:]):
+      deg = G.degree(hubsize+1+pos)
+      if deg is 10:
+        var10[index][0].append(elem)
+      vals1[index][deg] = vals1[index].get(deg, 0) + elem
+      counts1[index][deg] = counts1[index].get(deg, 0) + 1
+    for pos,elem in enumerate(eig[index][1][:,1][hubsize+1:]):
+      deg = G.degree(hubsize+1+pos)
+      if deg is 10:
+        var10[index][1].append(elem)
+      vals2[index][deg] = vals2[index].get(deg, 0) + elem
+      counts2[index][deg] = counts2[index].get(deg, 0) + 1
+    print 'done counting'
+    for key, val in counts1[index].iteritems():
+      vals1[index][key] /= float(val)
+    for key, val in counts2[index].iteritems():
+      vals2[index][key] /= float(val)
+
+  for i, (e1, e2, e3, e4) in enumerate(zip(eig[0][1][:,0], eig[1][1][:,0],
+                                           eig[0][1][:,1], eig[1][1][:,1])):
+    deg = G.degree(i)
+    f.write("%d, %f, %f, %f, %f\n" % (deg,e1,e2,e3,e4))
+  f.close()
+  fig = plt.figure()
+  ax = fig.add_subplot(111)
+  ax.spines['top'].set_color('none')
+  ax.spines['bottom'].set_color('none')
+  ax.spines['left'].set_color('none')
+  ax.spines['right'].set_color('none')
+  ax.tick_params(labelcolor='w', top='off', bottom='off', left='off', right='off')
+  
+  
+  ax1 = fig.add_subplot(221)
+  ax1.set_title('2nd evect, no localization, std = %f'%np.std(var10[0][0]))
+  plt.plot(vals1[0].keys(), vals1[0].values())
+  ax2 = fig.add_subplot(222)
+  ax2.set_title('2nd evect, with localization, std = %f'%np.std(var10[1][0]))
+  plt.plot(vals1[1].keys(), vals1[1].values())
+  ax3 = fig.add_subplot(223)
+  ax3.set_title('1st evect, no localization, std = %f'%np.std(var10[0][1]))
+  plt.plot(vals2[0].keys(), vals2[0].values())
+  ax4 = fig.add_subplot(224)
+  ax4.set_title('1st evect, with localization, std = %f'%np.std(var10[1][1]))
+  ax.set_xlabel('node degree')
+  plt.plot(vals2[1].keys(), vals2[1].values())
+  plt.show()
+  print counts2[0]
 
 def mega_graph():
   dirlist = glob.glob('./eig-data-*')
@@ -109,33 +186,49 @@ def mega_graph():
   plt.plot(eig2)
   plt.show()
 
-def power_law():
-  runs = 16000
-  samples = 50
-  x = [0]*samples
+def power_law(evalues=True,localization=False):
+  runs = 1000
+  samples = 40
+  nodes = 50000
+  print runs, samples, nodes
   y = [0]*samples
   y2 = [0]*samples
-  print runs, samples
-  for k in range(runs):
-    for i, gamma in enumerate(np.linspace(2.0, 3.0, samples)):
-      print k, i
-      powerlaw = lambda n : utils.powerlaw_sequence(n, gamma)
-      seq = utils.create_degree_sequence(100000,powerlaw)
-      G = configuration_model(seq)
+  heights = [0] * samples
+  gammarange = np.linspace(2.0, 3.0, samples)
+  for runnum in range(runs):
+    for i, gamma in enumerate(gammarange):
+      print runnum, i
+      #powerlaw = lambda n : utils.powerlaw_sequence(n, gamma)
+      #seq = utils.create_degree_sequence(nodes,powerlaw)
+      seq = custom_create_degree_sequence(nodes, gamma)
+      print 'done w degree seq'
+      G = custom_configuration_model(seq)
       A = to_scipy_sparse_matrix(G, dtype='d')
-      eig = lin.eigs(A, k=2, which='LR')
-      #print eig[0]
-      x[i] += gamma
-      y[i] += eig[0][0]
-      y2[i] += eig[0][1]
-  x = [j / float(runs) for j in x]
-  y = [j / float(runs) for j in y]
-  y2 = [j / float(runs) for j in y2]
-  print y
-  print y2
-  plt.scatter(x, y)
-  plt.scatter(x, y2)
-  plt.show()
+      print 'done making graph'
+      eig = lin.eigsh(A, k=1, which='LA')
+      print 'done computing eigs'
+      if localization:
+        height = max(eig[1])
+        base = sum(eig[1])
+        #base = reduce(lambda x,y: x+y*y, eig[1])
+        heights[i] += height/base
+        #heights[i] += height**2 / base
+      if evalues:
+        y[i] += eig[0][0]
+        y2[i] += eig[0][1]
+  if localization:
+    heights = [j / float(runs) for j in heights]
+    print heights
+    plt.scatter(gammarange, heights)
+    plt.show()
+  if evalues:
+    y = [j / float(runs) for j in y]
+    y2 = [j / float(runs) for j in y2]
+    print y
+    print y2
+    plt.scatter(gammarange, y)
+    plt.scatter(gammarange, y2)
+    plt.show()
 
 def process(str_list):
   samples = 20
@@ -150,10 +243,13 @@ def process(str_list):
   plt.scatter(x, data)
   plt.show()
 
-power_law()
+
+#cProfile.run('power_law(True,True)')
+#power_law(False,True)
 #plot_localization()
 #mega_graph()
 #check_crossover()
+localization_correlation()
 exit()
 #check_crossover()
 #check_crossover()
