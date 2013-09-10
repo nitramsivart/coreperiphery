@@ -1,4 +1,4 @@
-import oldbeliefprop as bp
+import decellebeliefprop as bp
 import numpy as np
 
 def test_update_parameters():
@@ -8,7 +8,25 @@ def test_update_parameters():
   message_field = ((1,0),
                    (0,1),
                    (0,1)) 
-  messages = np.zeros([3,3,2])
+  messages = (
+              (
+                (1,0),
+                (0,1),
+                (0,1)
+              ),
+              (
+                (1,0),
+                (0,1),
+                (0,1)
+              ),
+              (
+                (1,0),
+                (0,1),
+                (0,1)
+              ),
+             )
+
+
   joint_dist = (
                  (
                    None,
@@ -44,6 +62,8 @@ def test_update_parameters():
                    None
                  )
                )
-  print bp.update_parameters(connected_adj, messages, message_field, joint_dist)
+  print bp.get_message_field(connected_adj, messages, omega, gamma)
+  print bp.update_parameters(connected_adj, messages, message_field, joint_dist, omega)
+  print bp.update_parameters2(connected_adj, messages, message_field, joint_dist, omega)
 
 test_update_parameters()

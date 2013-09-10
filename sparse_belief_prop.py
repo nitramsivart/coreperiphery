@@ -4,15 +4,16 @@ import numpy as np
 import itertools as it
 import random
 import operator
+import pdb
 from math import exp
 
 # gives the probability of having the edge (or lack of edge) adj
 # and the block probability connection omega
-def edge_prob(adj, omega):
-  assert 0 <= omega <= 1, omega
+def edge_prob(adj, omega, n):
+  #assert 0 <= omega <= 1, omega
   assert adj == 1 or adj == 0, adj
   #return (omega**adj)*np.exp(-omega)
-  return omega if adj == 1 else 1.-omega
+  return omega if adj == 1. else 1.-omega
 
 
 # adj is the adjacency matrix of the graph
@@ -31,7 +32,9 @@ def update_messages(adj, messages, omega, gamma):
     if u == v:
       continue
 
-    norm_total = 0
+    norm_total = 0.
+    prod_total = 0.
+    sum_total = 0.
     for r in k_range:
       prod_total = 0.
       for w in n_range:
@@ -41,31 +44,17 @@ def update_messages(adj, messages, omega, gamma):
         sum_total = 0.
         for s in k_range:
           assert 0 <= messages[w][u][s] <= 1, messages[w][u][s]
-          sum_total += messages[w][u][s] * (omega[r][s] if adj[w][u] > 0 else 1.-omega[r][s])#edge_prob(adj[w][u], omega[r][s])
-        assert 0 <= sum_total <= 1
+          sum_total += messages[w][u][s] * edge_prob(adj[w][u], omega[r][s],len(n_range))
+        #assert 0 <= sum_total <= 1
         prod_total += np.log(sum_total)
       new_messages[u][v][r] = gamma[r]*np.exp(prod_total)
       norm_total += new_messages[u][v][r]
     for r in k_range:
       new_messages[u][v][r] = new_messages[u][v][r] / norm_total
-      messages[u][v][r] = new_messages[u][v][r]
+      #messages[u][v][r] = new_messages[u][v][r]
 
-    assert 0 <= new_messages[u][v][0] <= 1, new_messages[u][v][0]
+    assert 0 <= new_messages[u][v][0] <= 1, pdb.set_trace()
   return new_messages
-    
-  # normalize
-  for u, v in it.product(range(n), range(n)):
-    if u == v:
-      continue
-    sum_total = sum(new_messages[u][v])
-    assert sum_total > 0
-    #sum_total = sum(messages[u][v])
-    for r in range(k):
-      new_messages[u][v][r] /= sum_total
-      #messages[u][v][r] /= sum_total
-      assert 0 <= new_messages[u][v][r] <= 1, new_messages[u][v][r]
-  return new_messages
-
 
 def get_message_field(adj, messages, omega, gamma):
   n = len(messages)
@@ -77,7 +66,8 @@ def get_message_field(adj, messages, omega, gamma):
       if w == u:
         continue
 
-      sum_total = messages[w][u][0] * edge_prob(adj[w][u], omega[r][0]) + messages[w][u][1] * edge_prob(adj[w][u], omega[r][1])
+      sum_total = (messages[w][u][0] * edge_prob(adj[w][u], omega[r][0], n) + 
+                   messages[w][u][1] * edge_prob(adj[w][u], omega[r][1], n))
 
       prod_total += np.log(sum_total)
     message_field[u][r] = gamma[r]*np.exp(prod_total)
@@ -98,7 +88,7 @@ def get_joint_dist(adj, messages, omega):
   for u,v,r,s in it.product(range(n), range(n), range(k), range(k)):
     if u == v:
       continue
-    joint_dist[u][v][r][s] = (edge_prob(adj[u][v], omega[r][s]) *
+    joint_dist[u][v][r][s] = (edge_prob(adj[u][v], omega[r][s], n) *
                               messages[u][v][r] * messages[v][u][s])
 
   # normalize
@@ -125,12 +115,6 @@ def update_parameters(adj, messages, message_field, joint_dist, omega_old):
 
     assert gamma[r] <= 1, gamma[r]
 
-  degrees = np.zeros([k])
-  #calculate degrees by type:
-  for r in range(k):
-    for u in range(n):
-      degrees[r] += sum(adj[u]) * message_field[u][r]
-
   #calculate normalizing constants according to decelle
   z = np.zeros([n,n])
   for u, v in it.product(range(n), range(n)):
@@ -142,26 +126,60 @@ def update_parameters(adj, messages, message_field, joint_dist, omega_old):
       sum_total += omega_old[a][a] * messages[u][v][a] * messages[v][u][a]
     z[u][v] += sum_total
 
+  pdb.set_trace()
+
   # update omega
   for r in range(k):
     for s in range(k):
       for u, v in it.product(range(n), range(n)):
         if u == v or adj[u][v] == 0:
           continue
-        #omega[r][s] += omega_old[a][b] * (messages[u][v][a] * messages[v][u][b] + messages[u][v][b]*messages[v][u][a]) / z[u][v]
-        omega[r][s] += adj[u][v] * joint_dist[u][v][r][s]
-      print degrees[r], degrees[s]
-      omega[r][s] /= (degrees[r] * degrees[s])
-      #omega[r][s] /= (gamma[r] * gamma[s] * n)
-      if omega[r][s] > 1:
-        print('OMEGA TOO HIGH')
-        print omega[r][s]
-        omega[r][s] = 1
-      assert 0 <= omega[r][s] <= 1, omega[r][s]
+        omega[r][s] += omega_old[r][s] * (messages[u][v][r] * messages[v][u][s] + messages[u][v][s]*messages[v][u][r]) / z[u][v]
+      omega[r][s] /= (gamma[r] * gamma[s] * n)
   print sum(sum(omega))
 
   return omega, gamma
 
+def update_parameters2(adj, messages, message_field, joint_dist, omega_old):
+  print "start update_parameters2"
+  n = len(messages)
+  k = len(messages[0][0])
+  omega = np.zeros([k,k])
+  gamma = np.zeros([k])
+
+  # update gamma
+  for r in range(k):
+    for u in range(n):
+      gamma[r] += message_field[u][r]
+    # normalize gamma
+    gamma[r] /= n
+
+    assert gamma[r] <= 1, gamma[r]
+
+  degrees = np.zeros([k])
+  #calculate degrees by type:
+  for r in range(k):
+    sum_total = 0.
+    for u in range(n):
+      degrees[r] += sum(adj[u]) * message_field[u][r]
+      sum_total += message_field[u][r]
+    degrees[r] /= sum_total
+
+
+  # update omega
+  for r in range(k):
+    for s in range(k):
+      for u, v in it.product(range(n), range(n)):
+        if u == v or adj[u][v] == 0:
+          continue
+        omega[r][s] += adj[u][v] * joint_dist[u][v][r][s]
+      print r, s, omega[r][s], degrees[r], degrees[s]
+      omega[r][s] /= (degrees[r] * degrees[s])
+      omega[r][s] *= n
+  print sum(sum(omega))
+  print "end update_parameters2"
+
+  return omega, gamma
 
 def make_graph(n1, n2, p11, p12, p22):
   size = n1 + n2
@@ -199,11 +217,12 @@ def bp(gamma, omega, adj, tmax):
   nodes = len(adj)
   types = len(gamma)
   messages = np.zeros([nodes,nodes,types])
+  print omega
   for u,v in it.product(range(nodes), range(nodes)):
     
-    #a = .9 if u < 15 or u in [17,18,20,22,31] else .1
-    a = .1 if u in [0,1,2,32,33] else .5
-    a = .51
+    a = .9 if u < 15 or u in [17,18,20,22,31] else .1
+    #a = .1 if u in [0,1,2,32,33] else .5
+    #a = .51
     messages[u][v][0] = a
     messages[u][v][1] = 1-a
   for i in range(tmax):
@@ -211,8 +230,11 @@ def bp(gamma, omega, adj, tmax):
     joint_dist = get_joint_dist(adj, messages, omega)
     message_field = get_message_field(adj, messages, omega, gamma)
     omega, gamma = update_parameters(adj, messages, message_field, joint_dist, omega)
+    omega2, gamma2 = update_parameters2(adj, messages, message_field, joint_dist, omega)
     #print message_field
+    print gamma, gamma2
     print omega
+    print omega2
   ass = [max(enumerate(l), key=operator.itemgetter(1))[0] 
              for l in message_field]
   ass = [l[0] for l in message_field] 
@@ -223,7 +245,7 @@ def bp_fixed_params(gamma, omega, adj, tmax):
   types = len(gamma)
   messages = np.zeros([nodes,nodes,types])
   for u,v in it.product(range(nodes), range(nodes)):
-    a = .5 + (.0001 if u % 2 == 0 else -0.0001)
+    a = .5 + (.01 if u % 2 == 0 else -0.01)
     messages[u][v][0] = a
     messages[u][v][1] = 1-a
   for i in range(tmax):

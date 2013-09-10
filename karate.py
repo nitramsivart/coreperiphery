@@ -1,6 +1,7 @@
 import networkx as nx
 import numpy as np
-from oldbeliefprop import bp
+#from oldbeliefprop import bp
+from decellebeliefprop import bp
 import matplotlib.pylab as plt
 
 G = nx.read_gml('test/karate.gml')
@@ -17,10 +18,13 @@ omega= [(0.500001,0.5),(0.5,0.5)]
 omega = [(0.13494815, 0.13494805),(0.13494805, 0.13494815)] # cp
 omega= [(0.21366782,0.05622837),(0.05622837,0.21366782)] # com
 omega =[(.7601,0.2),(0.2,.76)] # community
-omega =[(.6,0.3),(0.3,.5)] # core periph
-tmax = 20
+omega =[[.6,0.3],[0.3,.5]] # core periph
+tmax = 100
 print "edges:", len(G.edges())
 print 'nodes:', len(G.nodes())
+# the following loop turns p's into c's
+for u,v in [(0,0),(0,1),(1,0),(1,1)]:
+  omega[u][v] = omega[u][v] * len(G.nodes())
 ass,phi,gamma,omega,messages = bp(gamma,omega,A,tmax)
 
 '''

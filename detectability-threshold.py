@@ -1,4 +1,4 @@
-import beliefprop as bp
+import decellebeliefprop as bp
 import networkx as nx
 import scipy.sparse as sp
 import scipy.sparse.linalg as lin
@@ -11,7 +11,7 @@ def do():
   n_p = 20
   runs = 1
   samples = 3
-  x = np.linspace(.5, .8, samples)
+  x = np.linspace(.6, .9, samples)
   #samples = 100
   #x = np.linspace(.5, 1, samples)
   y = [0.] * samples
@@ -31,6 +31,9 @@ def do():
       A = np.array(nx.adjacency_matrix(G))
       print 'starting bp'
       ass = bp.bp_fixed_params(gamma,omega,A,10)
+      nx.draw(G, node_color=ass)
+      print ass
+      plt.show()
       print 'ending bp'
 
       score = 0
@@ -46,7 +49,7 @@ def do():
   #plt.plot(x, y)
   #plt.show()
 
-cProfile.run('do()')
+do()
 
 #print perturbation
 #print phi
