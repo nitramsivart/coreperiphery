@@ -60,17 +60,17 @@ def check_crossover(hashi=False):
   plt.show()
 
 def plot_localization(hashi=False):
-  runs = 50
+  runs = 1
   samples = 200
   heights = [0] * samples
   f = open('localization-data.txt', 'w+')
   for i in range(runs):
-    for k in range(1, samples+1):
+    c = 100
+    n = 100000
+    G = fast_gnp_random_graph(n, c/float(n))
+    for k in range(140, samples+1):
       print i, k
-      c = 10
-      n = 10000
 
-      G = fast_gnp_random_graph(n, c/float(n))
       for j in range(1,k+1):
         G.add_edge(0, j)
       A = to_scipy_sparse_matrix(G, dtype='d')
@@ -87,7 +87,7 @@ def plot_localization(hashi=False):
           I_minus_D[node,node] = 1.0-deg
         crazy = sp.bmat([[None,I],[I_minus_D,A]])
 
-        eig = lin.eigs(crazy, k=1, which="LA")
+        eig = lin.eigs(crazy, k=1, which="LR")
         height = eig[1][n]
         base = sum(map(lambda x : x*x, eig[1][n+1:2*n]))
         heights[k-1] += height**2 / base
@@ -99,6 +99,108 @@ def plot_localization(hashi=False):
   #plt.ylim(0,1)
   plt.plot(heights)
   plt.show()
+
+def mega():
+  runs = 1
+  min_hub = 1
+  max_hub = 200
+  samples = max_hub - min_hub + 1
+  eval1 = [0] * samples
+  eval2 = [0] * samples
+  evalh = [0] * samples
+  op = [0] * samples
+  oph = [0] * samples
+  nb = [0] * samples
+  nbh = [0] * samples
+  c = 10
+  n = 1000000
+  f = open('mega-data-%d-%d.txt' % (c, n), 'w+')
+  print c, n
+  for dummy_counter in range(runs):
+    G = fast_gnp_random_graph(n, c/float(n))
+    for k in range(1, min_hub):
+      G.add_edge(0, k)
+    A = to_scipy_sparse_matrix(G, dtype='d',format='csr')
+    for i, k in enumerate(range(min_hub, max_hub+1)):
+      print dummy_counter, k
+      G.add_edge(0, k)
+      A[0, k] = 1
+      A[k, 0] = 1
+
+      #non hashi
+      eig = lin.eigsh(A, k=2, which='LA')
+      eval1[i] += eig[0][1]
+      eval2[i] += eig[0][0]
+      op[i] += abs(eig[1][0,1])
+      total = 0.
+      for j in range(1,k+1):
+        total += abs(eig[1][j,1])
+      nb[i] += total/k
+
+      #hashi
+      I = sp.identity(A.shape[0])
+      I_minus_D = sp.lil_matrix(A.shape)
+      for node,deg in G.degree_iter():
+        I_minus_D[node,node] = 1.0-deg
+      crazy = sp.bmat([[None,I],[I_minus_D,A]])
+
+      eig = lin.eigs(crazy, k=1, which="LR")
+      evalh[i] += eig[0][0]
+      oph += abs(eig[1][0])
+      total = 0.
+      for j in range(1,k+1):
+        total += abs(eig[1][0+j])
+      nbh[i] += total/k
+
+  x = range(min_hub, max_hub+1)
+  plt.figure()
+  plt.plot(x, eval1)
+  plt.plot(x, eval2)
+  plt.plot(x, evalh)
+  plt.figure()
+  plt.plot(x, evalh)
+  plt.figure()
+  plt.plot(x, op)
+  plt.figure()
+  plt.plot(x, oph)
+  plt.figure()
+  plt.plot(x, nb)
+  plt.figure()
+  plt.plot(x, nbh)
+  plt.show()
+
+  for i in range(samples):
+    f.write("%d,%r,%r,%r,%r,%r,%r,%r\n" % 
+            (i,eval1[i],eval2[i],evalh[i],op[i],oph[i],nb[i],nbh[i]))
+  f.close()
+                                      
+def interact():
+  def dummy(adj, graph, position):
+    eig = lin.eigsh(adj, k=1, which='LA')
+    l = map(lambda x:abs(x*x*10000),eig[1][:,0])
+    for elem in l:
+      print "%r" % elem
+    draw_networkx(graph, pos=position, node_size = l, with_labels=False)
+    plt.show()
+
+  min_hub = 0
+  max_hub = 50
+  c = 10
+  n = 300
+  f = open('interact-data-%d-%d.txt' % (c, n), 'w+')
+  print c, n
+  G = fast_gnp_random_graph(n, c/float(n))
+  pos = graphviz_layout(G, prog='sfdp')
+  for k in range(1, min_hub+1):
+    G.add_edge(0, k)
+  A = to_scipy_sparse_matrix(G, dtype='d')
+  dummy(A,G,pos)
+
+  for k in range(min_hub+1, max_hub+1):
+    G.add_edge(0, k)
+    A[0, k] = 1
+    A[k, 0] = 1
+  dummy(A,G,pos)
 
 def localization_correlation():
   f = open('localization-correlation.txt', 'w+')
@@ -243,19 +345,19 @@ def process(str_list):
   plt.scatter(x, data)
   plt.show()
 
-
+#mega()
+interact()
 #cProfile.run('power_law(True,True)')
 #power_law(False,True)
 #plot_localization()
 #mega_graph()
 #check_crossover()
-localization_correlation()
+#localization_correlation()
 exit()
 #check_crossover()
 #check_crossover()
 #check_crossover()
 
-process(['[(294.94739625359296+0j), (263.44188958649829+0j), (145.98087487508664+0j), (223.56558588822088+0j), (146.78448141055148+0j), (137.68663415093155+0j), (136.6380596409843+0j), (150.38724278748569+0j), (124.73681797906652+0j), (106.6800547054679+0j), (94.961111792606175+0j), (70.891874362811379+0j), (63.948317806234677+0j), (72.90887358977497+0j), (68.889269250434467+0j), (43.171358140744452+0j), (46.309960108955842+0j), (63.737041231094118+0j), (41.070838356851844+0j), (29.906044029924907+0j)]','[(210.20539286257824+0j), (270.76472519800404+0j), (252.62434460665091+0j), (152.29045508571639+0j), (188.02607555742088+0j), (142.0181001533075+0j), (122.82352550371969+0j), (100.15248341399872+0j), (121.75488998217483+0j), (97.574557859891414+0j), (119.53499950609329+0j), (55.090715631996815+0j), (59.148050483331971+0j), (52.6371939748175+0j), (62.584812012787673+0j), (36.839871425798364+0j), (78.397897222027879+0j), (47.832674954494152+0j), (75.952684927421487+0j), (30.716184018217412+0j)]','[(254.27699405318739+0j), (247.61267893664422+0j), (164.00164249891699+0j), (241.31807693162119+0j), (194.14505842441002+0j), (171.56418556948321+0j), (147.0539728027768+0j), (151.13425608432993+0j), (102.58571944481749+0j), (112.59051015939637+0j), (91.045586710108779+0j), (66.029926465684454+0j), (63.264919992517363+0j), (85.605991370541645+0j), (45.354382349422657+0j), (75.803396019657328+0j), (49.648262475823799+0j), (45.632517448933974+0j), (31.897356244448886+0j), (42.008866726839287+0j)]','[(289.41491999157017+0j), (221.35884189781058+0j), (286.55029728683036+0j), (158.22094190122849+0j), (227.91794440876433+0j), (148.67005002164862+0j), (134.66715649238691+0j), (112.55427977017713+0j), (159.4572176052414+0j), (101.2723518920769+0j), (85.387318904628458+0j), (98.706066802263408+0j), (80.203713388789339+0j), (64.664601831830325+0j), (68.743487578090424+0j), (62.126450753508813+0j), (41.101597970462478+0j), (31.269552133897868+0j), (46.292788464365877+0j), (37.031618886613515+0j)]'])
 
 
 exit()
