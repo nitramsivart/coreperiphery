@@ -112,8 +112,8 @@ def mega():
   oph = [0] * samples
   nb = [0] * samples
   nbh = [0] * samples
-  c = 10
-  n = 1000000
+  c = 7
+  n = 1000
   f = open('mega-data-%d-%d.txt' % (c, n), 'w+')
   print c, n
   for dummy_counter in range(runs):
@@ -175,32 +175,77 @@ def mega():
   f.close()
                                       
 def interact():
-  def dummy(adj, graph, position):
+  def dummy(adj, graph, position, colors):
     eig = lin.eigsh(adj, k=1, which='LA')
-    l = map(lambda x:abs(x*x*10000),eig[1][:,0])
-    for elem in l:
-      print "%r" % elem
-    draw_networkx(graph, pos=position, node_size = l, with_labels=False)
-    plt.show()
+    l = map(lambda x:abs(x*x*40000),eig[1][:,0])
+    plt.figure(figsize=(13,13))
+    networkx.draw(graph, linewidths=.1,pos=position, node_color = colors, width=.05, node_size = l, with_labels=False)
 
-  min_hub = 0
-  max_hub = 50
-  c = 10
-  n = 300
+  min_hub = 25
+  max_hub = 100
+  c = 7
+  n = 1000
   f = open('interact-data-%d-%d.txt' % (c, n), 'w+')
   print c, n
   G = fast_gnp_random_graph(n, c/float(n))
-  pos = graphviz_layout(G, prog='sfdp')
+  colors = ['r'] * n
+  colors2 = ['r'] * n
+  colors[0] = colors2[0] = 'b'
+  #pos = graphviz_layout(G, prog='sfdp', root=0)
   for k in range(1, min_hub+1):
     G.add_edge(0, k)
-  A = to_scipy_sparse_matrix(G, dtype='d')
-  dummy(A,G,pos)
+    colors[k] = 'g'
+    colors2[k] = 'g'
 
+  G2 = G.copy()
   for k in range(min_hub+1, max_hub+1):
+    G2.add_edge(0, k)
+    colors2[k] = 'g'
+  pos = graphviz_layout(G2, prog='neato', root=0)
+  A = to_scipy_sparse_matrix(G, dtype='d')
+  A2 = to_scipy_sparse_matrix(G2, dtype='d')
+  dummy(A,G,pos,colors)
+  dummy(A2,G2,pos,colors2)
+  plt.show()
+
+def movie():
+
+  min_hub = 1
+  max_hub = 200
+  c = 7
+  n = 400000
+  print c, n
+  G = fast_gnp_random_graph(n, c/float(n))
+  print 'done w graph'
+  colors = ['r'] * n
+  colors[0] = 'b'
+  #pos = graphviz_layout(G, prog='sfdp', root=0)
+  for k in range(1, max_hub+1):
     G.add_edge(0, k)
-    A[0, k] = 1
-    A[k, 0] = 1
-  dummy(A,G,pos)
+    colors[k] = 'g'
+  #pos = graphviz_layout(G, prog='neato', root=0)
+  xmax = None
+  ymax = None
+  for hubsize in reversed(range(min_hub, max_hub+1)):
+    print hubsize
+    if hubsize != max_hub:
+      G.remove_edge(0, hubsize+1)
+      colors[hubsize+1] = 'r'
+    A = to_scipy_sparse_matrix(G, dtype='d')
+    eig = lin.eigsh(A, k=1, which='LA')
+    print 'done with eig'
+    #l = map(lambda x:abs(x*x*80000),eig[1][:,0])
+    l = map(lambda x:abs(x), eig[1][:,0])
+    deg = [d for x,d in G.degree_iter()]
+    plt.figure(figsize=(13,13))
+    plt.scatter(deg, l, c=colors)
+    #networkx.draw(G, linewidths=.02,pos=pos, node_color = colors, width=.01, node_size = l, with_labels=False)
+    plt.title(str(hubsize))
+    if hubsize == max_hub:
+      xmax = G.degree(0)
+      ymax = abs(eig[1][0,0])
+    plt.axis([0,xmax,0,ymax])
+    plt.savefig('img-400000-7/%d'%hubsize)
 
 def localization_correlation():
   f = open('localization-correlation.txt', 'w+')
@@ -346,7 +391,9 @@ def process(str_list):
   plt.show()
 
 #mega()
-interact()
+#cProfile.run('interact()')
+#interact()
+movie()
 #cProfile.run('power_law(True,True)')
 #power_law(False,True)
 #plot_localization()
