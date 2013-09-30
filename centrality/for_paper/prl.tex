@@ -60,9 +60,7 @@
 
 \maketitle
 
-Eigenvector centrality is popular and has many uses.
-
-It is based on the leading eigenvector, which has been studied in depth. Chung~\etal~\cite{chung03} lower bounded it by the weighted average of the squares of node degrees and by the square root of the largest degree. Many sparse graphs have little degree variation, and thus their leading eigenvector is a global measure corresponding to the weighted average of squared degrees, and is robust to local changes.
+Network researchers have long been interested in an effective method of measuring \emph{centrality}, a quantification of how important or central each network node is. Eigenvector centrality~\cite{bonacich72} is among the most influential centrality measures, with widely ranging applications to metabolic networks~\cite{ding10}, football team ranking~\cite{keener93}, bird mating analysis~\cite{ryder08}, and Google's highly successful PageRank algorithm\footnote{PageRank uses a closely related variant of eigenvector centrality}~\cite{brin98}. Eigenvector centrality requires that each node's centrality be proportional to the sum of its neighbor's centralities. It can be conveniently calculated by the leading eigenvector of the network's adjacency matrix, which has been studied in depth. Chung~\etal~\cite{chung03} lower bounded it by the weighted average of the squares of node degrees and by the square root of the largest degree. Many sparse graphs have little degree variation, and thus their leading eigenvector is a global measure corresponding to the weighted average of squared degrees, and is robust to local changes.
 
 % Erd\H{o}s--R\'enyi
 However, the leading eigenvalue is also bounded by the square root of the largest degree. For networks with unbalanced enough degree distributions, the leading eigenvalue corresponds to the largest hub in the network. Nadakuditi and Newman~\cite{nadakuditi13} analyze this phenomenon for Poisson random graphs with a planted hub. They show the existance of an eigenvalue for the hub vertex, and show that as the hub grows, its eigenvalue overtakes the average-degree eigenvalue.
@@ -157,6 +155,6 @@ This centrality measure is great, but certainly not an end-all be-all. For examp
 \label{fig:power-law}
 \end{figure}
 
-\bibliography{travis.bib}
+\bibliography{travis}
 
 \end{document}
