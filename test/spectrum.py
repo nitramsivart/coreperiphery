@@ -26,6 +26,26 @@ def cavity(A, flow=False):
           B[e1][e2] = 1
   return B, edges
 
+def crazycavity(A):
+  # the index of the edge in the dictionary
+  index = 0
+  edges = {}
+  for i in range(len(A)):
+    for j in range(len(A)):
+      if A[i][j] == 1:
+        edges[index] = (i, j)
+        index += 1
+  print len(edges)
+  B = np.zeros([len(edges)+len(A), len(edges)+len(A)])
+  for e1 in range(len(edges)):
+    for e2 in range(len(edges)):
+      k, l = edges[e1]
+      i, j = edges[e2]
+      if j == k and i != l:
+        B[e1][e2] = 1
+
+  return B, edges
+
 def generate_tree():
   size = 256 
   A = np.zeros([size, size])
@@ -58,7 +78,7 @@ B, edges = cavity(A, True)
 
 one = np.ones([len(B),len(B)])/len(B)
 m = sage.all.matrix(B)
-vector = m.eigenvectors_right()[1][1][0]
+vector = m.eigenvectors_right()[0][1][0]
 
 
 
@@ -68,7 +88,7 @@ for i, e in enumerate(vector):
   colors[edges[i][1]] += e
 
 print colors
-colors = [1 if c>0 else -1 for c in colors]
+#colors = [1 if c>0 else -1 for c in colors]
 
 nx.draw(G, node_color=colors)
 plt.show()
