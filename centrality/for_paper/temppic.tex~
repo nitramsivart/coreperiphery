@@ -1,0 +1,34 @@
+\documentclass{article}
+
+\usepackage{amsfonts, amsmath}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{bbm, comment}
+\usepackage{subfigure}
+\usepackage{color}
+
+
+
+
+\begin{document}
+
+\begin{figure}
+        \centering
+        \subfigure{\includegraphics[width=0.49\textwidth]{1.png}}
+        \subfigure{\includegraphics[width=0.49\textwidth]{1h.png}}
+        \subfigure{\includegraphics[width=0.49\textwidth]{2.png}}
+        \subfigure{\includegraphics[width=0.49\textwidth]{2h.png}}
+        \subfigure{\includegraphics[width=0.49\textwidth]{3.png}}
+        \subfigure{\includegraphics[width=0.49\textwidth]{3h.png}}
+\end{figure}
+\begin{figure}
+        \centering
+        \subfigure{\includegraphics[width=0.49\textwidth]{eig.png}}
+        \subfigure{\includegraphics[width=0.49\textwidth]{eigh.png}}
+        \subfigure{\includegraphics[width=0.49\textwidth]{op.png}}
+        \subfigure{\includegraphics[width=0.49\textwidth]{oph.png}}
+        \subfigure{\includegraphics[width=0.49\textwidth]{nb.png}}
+        \subfigure{\includegraphics[width=0.49\textwidth]{nbh.png}}
+\end{figure}
+
+\end{document}
