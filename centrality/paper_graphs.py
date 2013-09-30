@@ -6,17 +6,24 @@ import numpy as np
 import matplotlib.pylab as plt
 import time
 import glob
-import random
-from datetime import datetime
 import cProfile
 
+def hashi_eig(A, degrees):
+  I = sp.identity(A.shape[0])
+  I_minus_D = sp.lil_matrix(A.shape)
+  deg_list = list(degrees)
+  for node,deg in deg_list:
+    I_minus_D[node,node] = 1.0-deg
+  crazy = sp.bmat([[None,I],[I_minus_D,A]])
+  eig = lin.eigs(crazy, k=1, which="LR")[1][:len(deg_list),0]
+  root_total = np.sqrt(sum(x*x for x in eig))
+  return [x/root_total for x in eig]
 
 def check_crossover(hashi=False):
   runs = 1
   samples = 100
   eig1 = [0] * samples
   eig2 = [0] * samples
-  eig3 = [0] * samples
   f = open('eig-data-%d.txt' % (time.time() % 10000), 'w+')
   hubrange = range(50,150)
   for i in range(runs):
@@ -25,6 +32,8 @@ def check_crossover(hashi=False):
       c = 10
       n = 50000
       G = fast_gnp_random_graph(n, c/float(n))
+      for nbr in list(G[0]):
+        G.remove_edge(0,nbr)
 
       for j in range(1,hubsize+1):
         G.add_edge(0, j)
@@ -68,6 +77,8 @@ def plot_localization(hashi=False):
     c = 100
     n = 100000
     G = fast_gnp_random_graph(n, c/float(n))
+    for nbr in list(G[0]):
+      G.remove_edge(0,nbr)
     for k in range(140, samples+1):
       print i, k
 
@@ -81,15 +92,9 @@ def plot_localization(hashi=False):
         base = sum(map(lambda x : x*x, eig[1][1:]))
         heights[k-1] += height**2 / base
       else:
-        I = sp.identity(A.shape[0])
-        I_minus_D = sp.lil_matrix(A.shape)
-        for node,deg in G.degree_iter():
-          I_minus_D[node,node] = 1.0-deg
-        crazy = sp.bmat([[None,I],[I_minus_D,A]])
-
-        eig = lin.eigs(crazy, k=1, which="LR")
-        height = eig[1][n]
-        base = sum(map(lambda x : x*x, eig[1][n+1:2*n]))
+        eig = hashi_eig(A, G.degree_iter())
+        height = eig[0]
+        base = sum(map(lambda x : x*x, eig))
         heights[k-1] += height**2 / base
 
   for i in range(samples):
@@ -100,10 +105,10 @@ def plot_localization(hashi=False):
   plt.plot(heights)
   plt.show()
 
-def mega():
+def mega(num=2000000):
   runs = 1
   min_hub = 1
-  max_hub = 200
+  max_hub = 160
   samples = max_hub - min_hub + 1
   eval1 = [0] * samples
   eval2 = [0] * samples
@@ -112,12 +117,14 @@ def mega():
   oph = [0] * samples
   nb = [0] * samples
   nbh = [0] * samples
-  c = 7
-  n = 1000
-  f = open('mega-data-%d-%d.txt' % (c, n), 'w+')
+  c = 10
+  n = num
+  f = open('for_paper/mega-data-%d-%d.txt' % (c, n), 'w+')
   print c, n
   for dummy_counter in range(runs):
     G = fast_gnp_random_graph(n, c/float(n))
+    for nbr in list(G[0]):
+      G.remove_edge(0,nbr)
     for k in range(1, min_hub):
       G.add_edge(0, k)
     A = to_scipy_sparse_matrix(G, dtype='d',format='csr')
@@ -131,7 +138,7 @@ def mega():
       eig = lin.eigsh(A, k=2, which='LA')
       eval1[i] += eig[0][1]
       eval2[i] += eig[0][0]
-      op[i] += abs(eig[1][0,1])
+      op[i] += sum(map(lambda x : x**4, eig[1][:,1]))**(1./4.)
       total = 0.
       for j in range(1,k+1):
         total += abs(eig[1][j,1])
@@ -146,76 +153,218 @@ def mega():
 
       eig = lin.eigs(crazy, k=1, which="LR")
       evalh[i] += eig[0][0]
-      oph += abs(eig[1][0])
+      root_total = np.sqrt(sum(x*x for x in eig[1][:n,0]))
+      eig = [x/root_total for x in eig[1][:n,0]]
+      oph[i] += sum(map(lambda x : x**4, eig))**(1./4.)
       total = 0.
       for j in range(1,k+1):
-        total += abs(eig[1][0+j])
+        total += abs(eig[j])
       nbh[i] += total/k
+
+  for i in range(samples):
+    f.write("%d %r %r %r %r %r %r %r\n" % 
+            (i,eval1[i],eval2[i],evalh[i],op[i],oph[i],nb[i],nbh[i]))
+  f.close()
+  return
 
   x = range(min_hub, max_hub+1)
   plt.figure()
   plt.plot(x, eval1)
   plt.plot(x, eval2)
   plt.plot(x, evalh)
+  plt.savefig("for_paper/eig.png")
   plt.figure()
   plt.plot(x, evalh)
+  plt.savefig("for_paper/eigh.png")
   plt.figure()
   plt.plot(x, op)
+  plt.savefig("for_paper/op.png")
   plt.figure()
   plt.plot(x, oph)
+  plt.savefig("for_paper/oph.png")
   plt.figure()
   plt.plot(x, nb)
+  plt.savefig("for_paper/nb.png")
   plt.figure()
   plt.plot(x, nbh)
-  plt.show()
+  plt.savefig("for_paper/nbh.png")
+  #plt.show()
+  return eval1, eval2, evalh, op, oph, nb, nbh
 
-  for i in range(samples):
-    f.write("%d,%r,%r,%r,%r,%r,%r,%r\n" % 
-            (i,eval1[i],eval2[i],evalh[i],op[i],oph[i],nb[i],nbh[i]))
-  f.close()
-                                      
-def interact():
-  def dummy(adj, graph, position, colors):
-    eig = lin.eigsh(adj, k=1, which='LA')
-    l = map(lambda x:abs(x*x*40000),eig[1][:,0])
-    plt.figure(figsize=(13,13))
-    networkx.draw(graph, linewidths=.1,pos=position, node_color = colors, width=.05, node_size = l, with_labels=False)
-
-  min_hub = 25
-  max_hub = 100
-  c = 7
-  n = 1000
-  f = open('interact-data-%d-%d.txt' % (c, n), 'w+')
+def write_to_file(num=2000000):
+  min_hub = 20
+  middle_hub = 70
+  max_hub = 120
+  c = 10
+  n = num
   print c, n
   G = fast_gnp_random_graph(n, c/float(n))
-  colors = ['r'] * n
-  colors2 = ['r'] * n
-  colors[0] = colors2[0] = 'b'
-  #pos = graphviz_layout(G, prog='sfdp', root=0)
+  for nbr in list(G[0]):
+    G.remove_edge(0,nbr)
+  print 'done making graph'
+
   for k in range(1, min_hub+1):
     G.add_edge(0, k)
+  G1 = G.copy()
+  A1 = to_scipy_sparse_matrix(G, dtype='d')
+
+  
+  eig1 = lin.eigsh(A1, k=1, which='LA')[1][:,0]
+  eig1h = hashi_eig(A1, G.degree_iter())
+  print "done edges 1"
+
+  for k in range(min_hub+1, middle_hub+1):
+    G.add_edge(0, k)
+  G2 = G.copy()
+  A2 = to_scipy_sparse_matrix(G, dtype='d')
+  
+  eig2 = lin.eigsh(A2, k=1, which='LA')[1][:,0]
+  eig2h = hashi_eig(A2, G.degree_iter())
+  print "done edges 2"
+
+  for k in range(middle_hub+1, max_hub+1):
+    G.add_edge(0, k)
+  A3 = to_scipy_sparse_matrix(G, dtype='d')
+
+  eig3 = lin.eigsh(A3, k=1, which='LA')[1][:,0]
+  eig3h = hashi_eig(A3, G.degree_iter())
+  print "done edges 3"
+
+  f = open('for_paper/all-eigs-%d-%d.txt' % (c, n), 'w+')
+  for i in range(len(eig3)):
+    d = tuple(map(lambda x:abs(x.real),(G.degree(i),eig1[i], eig2[i], eig3[i], eig1h[i], eig2h[i], eig3h[i])))
+    f.write("%d\t%f\t%f\t%f\t%f\t%f\t%f\n" % d)
+  f.close()
+
+  '''
+  write_dot(G1, "G1-%d-%d" % (c,n))
+  write_dot(G2, "G2-%d-%d" % (c,n))
+  write_dot(G, "G3-%d-%d" % (c,n))
+  '''
+                                      
+def interact(num=2000000):
+  def dummy(adj, graph, degrees, position, colors, nodes, name):
+    print len(degrees)
+    write_adjlist(graph,"for_paper/%s.adjlist"%name)
+    eig = lin.eigsh(adj, k=1, which='LA')[1][:,0]
+    #sizes = [x**2*1000000 for x in eig[1][:,0]]
+
+    eigh = hashi_eig(adj, degrees)
+    f = open("for_paper/%s-eigs.txt"%name, "w+")
+    for e, eh in zip(eig, eigh):
+      f.write("%r %r\n" % (abs(e), abs(eh.real)))
+    f.close()
+    #sizesh = [x.real**2*1000000 for x in eigh]
+    #plt.figure(figsize=(7,7))
+    print 'done finding eig'
+    #networkx.draw(graph, linewidths=.1,pos=position, node_color = colors, width=.05, node_size = sizes, with_labels=False)
+    #plt.savefig("%s.png"%name)
+
+    #plt.figure(figsize=(7,7))
+    #networkx.draw(graph, linewidths=.1,pos=position, node_color = colors, width=.05, node_size = sizesh, with_labels=False)
+    #plt.savefig("%s-h.png"%name)
+
+  min_hub = 20
+  middle_hub = 70
+  max_hub = 120
+  c = 10
+  n = num
+  #f = open('interact-data-%d-%d.txt' % (c, n), 'w+')
+  print c, n
+  G = fast_gnp_random_graph(n, c/float(n))
+  for nbr in list(G[0]):
+    G.remove_edge(0,nbr)
+  print 'done making graph'
+  colors = ['r'] * n
+  colors2 = ['r'] * n
+  colors3 = ['r'] * n
+  colors[0] = colors2[0] = colors3[0] = 'b'
+  for k in range(1, min_hub+1):
+    G.add_edge(0, k)
+  for k in G.neighbors(0):
     colors[k] = 'g'
     colors2[k] = 'g'
+    colors3[k] = 'g'
+    for j in G.neighbors(k):
+      if colors[j] == 'r':
+        colors[j] = 'red'
+        colors2[j] = 'red'
+        colors3[j] = 'red'
+  degrees1 = list(G.degree_iter())
 
   G2 = G.copy()
-  for k in range(min_hub+1, max_hub+1):
+  for k in range(min_hub+1, middle_hub+1):
     G2.add_edge(0, k)
     colors2[k] = 'g'
-  pos = graphviz_layout(G2, prog='neato', root=0)
+    colors3[k] = 'g'
+    for j in G2.neighbors(k):
+      if colors2[j] == 'r':
+        colors2[j] = 'red'
+        colors3[j] = 'red'
+  degrees2 = list(G2.degree_iter())
+  G3 = G2.copy()
+  for k in range(middle_hub+1, max_hub+1):
+    G3.add_edge(0, k)
+    colors3[k] = 'g'
+    for j in G3.neighbors(k):
+      if colors3[j] == 'r':
+        colors3[j] = 'red'
+  degrees3 = list(G3.degree_iter())
+
+  print 'done adding edges'
+  #nodes = filter(lambda n : colors3[n] != 'r', G.nodes())
+
   A = to_scipy_sparse_matrix(G, dtype='d')
   A2 = to_scipy_sparse_matrix(G2, dtype='d')
-  dummy(A,G,pos,colors)
-  dummy(A2,G2,pos,colors2)
+  A3 = to_scipy_sparse_matrix(G3, dtype='d')
+  print 'done sending to matrix'
+
+  #return G, G2, G3, A, A2, A3
+
+  count = 0
+  final_nodes = {}
+  final_colors1 = []
+  final_colors2 = []
+  final_colors3 = []
+  for v1 in G3.neighbors(0):
+    for v2 in G3.neighbors(v1):
+      if colors3[v2] == 'r':
+        colors3[v2] = 'red'
+      #for v3 in G3.neighbors(v2):
+        #if colors3[v3] == 'r':
+          #colors3[v3] = 'red'
+  for n in range(len(colors3)):
+    if colors3[n] != 'r':
+      final_nodes[count] = n
+      final_colors1.append(colors[n])
+      final_colors2.append(colors2[n])
+      final_colors3.append(colors3[n])
+      count += 1
+    else:
+      G.remove_node(n)
+      G2.remove_node(n)
+      G3.remove_node(n)
+  print len(G3.nodes())
+  pos = graphviz_layout(G3)
+  f = open("for_paper/positions.txt", "w+")
+  f.write(str(pos))
+  f.close()
+
+  print 'done positioning'
+  dummy(A,G,degrees1,pos,final_colors1,nodes,"1")
+  dummy(A2,G2,degrees2,pos,final_colors2,nodes,"2")
+  dummy(A3,G3,degrees3,pos,final_colors3,nodes,"3")
   plt.show()
 
 def movie():
-
-  min_hub = 1
-  max_hub = 200
-  c = 7
-  n = 400000
+  min_hub = 10
+  max_hub = 100
+  c = 6
+  n = 500000
   print c, n
   G = fast_gnp_random_graph(n, c/float(n))
+  for nbr in list(G[0]):
+    G.remove_edge(0,nbr)
   print 'done w graph'
   colors = ['r'] * n
   colors[0] = 'b'
@@ -232,12 +381,25 @@ def movie():
       G.remove_edge(0, hubsize+1)
       colors[hubsize+1] = 'r'
     A = to_scipy_sparse_matrix(G, dtype='d')
+    
+    #hashi
+    '''
+    I = sp.identity(A.shape[0])
+    I_minus_D = sp.lil_matrix(A.shape)
+    for node,deg in G.degree_iter():
+      I_minus_D[node,node] = 1.0-deg
+    crazy = sp.bmat([[None,I],[I_minus_D,A]])
+    eig = lin.eigs(crazy, k=1, which="LR")
+    root_total = sqrt(sum(x*x for x in eigh)) # needs some editing
+    eigh = [x/root_total for x in eigh]
+    '''
     eig = lin.eigsh(A, k=1, which='LA')
     print 'done with eig'
     #l = map(lambda x:abs(x*x*80000),eig[1][:,0])
-    l = map(lambda x:abs(x), eig[1][:,0])
+    l = map(lambda x:abs(x), eig[1][:n,0])
+    print len(l)
     deg = [d for x,d in G.degree_iter()]
-    plt.figure(figsize=(13,13))
+    plt.figure(figsize=(7,7))
     plt.scatter(deg, l, c=colors)
     #networkx.draw(G, linewidths=.02,pos=pos, node_color = colors, width=.01, node_size = l, with_labels=False)
     plt.title(str(hubsize))
@@ -245,7 +407,7 @@ def movie():
       xmax = G.degree(0)
       ymax = abs(eig[1][0,0])
     plt.axis([0,xmax,0,ymax])
-    plt.savefig('img-400000-7/%d'%hubsize)
+    plt.savefig('img-500000-6/%d'%hubsize)
 
 def localization_correlation():
   f = open('localization-correlation.txt', 'w+')
@@ -258,6 +420,8 @@ def localization_correlation():
   c = 10
   n = 2000000
   G = fast_gnp_random_graph(n, c/float(n))
+  for nbr in list(G[0]):
+    G.remove_edge(0,nbr)
 
   eig = [None,None]
   for index, hubsize in enumerate([50, 160]):
@@ -333,41 +497,75 @@ def mega_graph():
   plt.plot(eig2)
   plt.show()
 
-def power_law(evalues=True,localization=False):
+def simpler_power_law(num=2000000):
   runs = 1000
-  samples = 40
-  nodes = 50000
+  samples = 100
+  nodes = num
+  print runs, samples, nodes
+  heights = [0] * samples
+  heightsh = [0] * samples
+  gammarange = np.linspace(2.2, 2.8, samples)
+  for runnum in range(runs):
+    if True or runnum % 10 == 0:
+      print heights
+      print heightsh
+    for i, gamma in enumerate(gammarange):
+      print runnum, i
+      seq = custom_create_degree_sequence(nodes, gamma)
+      G = custom_configuration_model(seq)
+      A = to_scipy_sparse_matrix(G, dtype='d')
+      eig = lin.eigsh(A, k=1, which='LA')[1][:,0]
+      # hashi
+      eigh = hashi_eig(A, G.degree_iter())
+      heights[i] += sum(x**4 for x in eig)
+      heightsh[i] += sum(x.real**4 for x in eigh)
+  f = open("for_paper/power-law-%d.txt" % num, 'w+')
+  heights = [j / float(runs) for j in heights]
+  heightsh = [j / float(runs) for j in heightsh]
+  print heights
+  print heightsh
+  f.write("%d %d %d\n" %(runs, samples, nodes))
+  for i in range(samples):
+    f.write("%r %r" % (heights[i], heightsh[i]))
+  f.close()
+
+def power_law(evalues=True,localization=False, num = 10000):
+  runs = 1000
+  samples = 100
+  nodes = num
   print runs, samples, nodes
   y = [0]*samples
   y2 = [0]*samples
   heights = [0] * samples
-  gammarange = np.linspace(2.0, 3.0, samples)
+  gammarange = np.linspace(2.2, 2.8, samples)
   for runnum in range(runs):
+    print heights
     for i, gamma in enumerate(gammarange):
       print runnum, i
       #powerlaw = lambda n : utils.powerlaw_sequence(n, gamma)
       #seq = utils.create_degree_sequence(nodes,powerlaw)
       seq = custom_create_degree_sequence(nodes, gamma)
-      print 'done w degree seq'
       G = custom_configuration_model(seq)
       A = to_scipy_sparse_matrix(G, dtype='d')
-      print 'done making graph'
       eig = lin.eigsh(A, k=1, which='LA')
       print 'done computing eigs'
       if localization:
+        heights[i] += sum(map(lambda x : x**4, eig[1][:,0]))
+        '''
         height = max(eig[1])
         base = sum(eig[1])
         #base = reduce(lambda x,y: x+y*y, eig[1])
         heights[i] += height/base
         #heights[i] += height**2 / base
+        '''
       if evalues:
         y[i] += eig[0][0]
         y2[i] += eig[0][1]
   if localization:
     heights = [j / float(runs) for j in heights]
     print heights
-    plt.scatter(gammarange, heights)
-    plt.show()
+    #plt.scatter(gammarange, heights)
+    #plt.show()
   if evalues:
     y = [j / float(runs) for j in y]
     y2 = [j / float(runs) for j in y2]
@@ -376,6 +574,7 @@ def power_law(evalues=True,localization=False):
     plt.scatter(gammarange, y)
     plt.scatter(gammarange, y2)
     plt.show()
+  return heights
 
 def process(str_list):
   samples = 20
@@ -390,36 +589,19 @@ def process(str_list):
   plt.scatter(x, data)
   plt.show()
 
-#mega()
+
+#interact(1000000)
+#mega(1000000)
+#write_to_file(1000000)
+simpler_power_law(1000000)
+#mega(2000000)
 #cProfile.run('interact()')
 #interact()
-movie()
+#write_to_file()
+#movie()
 #cProfile.run('power_law(True,True)')
 #power_law(False,True)
 #plot_localization()
 #mega_graph()
 #check_crossover()
 #localization_correlation()
-exit()
-#check_crossover()
-#check_crossover()
-#check_crossover()
-
-
-
-exit()
-f = open("flow.txt", 'w+')
-for v in eig2[1]:
-  f.write(str(v)+'\n')
-f.close()
-
-exit()
-f = open("adj.txt", "w+")
-for v in eig[1]:
-  f.write(str(v.real)+"\n")
-
-#print eigenvector_centrality(G)
-'''
-for v in range(len(eig[1][0])):
-  f.write(str(eig[1][:,v]))
-'''
