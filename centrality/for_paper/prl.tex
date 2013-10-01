@@ -60,14 +60,20 @@
 
 \maketitle
 
-Network researchers have long been interested in an effective method of measuring \emph{centrality}, a quantification of how important or central each network node is. Eigenvector centrality~\cite{bonacich72} is among the most influential centrality measures, with widely ranging applications to metabolic networks~\cite{ding10}, football team ranking~\cite{keener93}, bird mating analysis~\cite{ryder08}, and Google's highly successful PageRank algorithm\footnote{PageRank uses a closely related variant of eigenvector centrality}~\cite{brin98}. Eigenvector centrality requires that each node's centrality be proportional to the sum of its neighbor's centralities. It can be conveniently calculated by the leading eigenvector of the network's adjacency matrix, which has been studied in depth. Chung~\etal~\cite{chung03} lower bounded it by the weighted average of the squares of node degrees and by the square root of the largest degree. Many sparse graphs have little degree variation, and thus their leading eigenvector is a global measure corresponding to the weighted average of squared degrees, and is robust to local changes.
+Network researchers have long been interested in an effective method of measuring \emph{centrality}, a quantification of how important or central each network node is. Eigenvector centrality~\cite{bonacich72} is among the most influential centrality measures, with widely ranging applications to metabolic networks~\cite{ding10}, football team ranking~\cite{keener93}, bird mating analysis~\cite{ryder08}, and Google's highly successful PageRank algorithm\footnote{PageRank uses a closely related variant of eigenvector centrality}~\cite{brin98}. Eigenvector centrality specifies that each node's centrality be proportional to the sum of its neighbor's centralities, and can be conveniently calculated from the leading eigenvector of the network's adjacency matrix. Chung~\etal show that the largest eigenvalue of the adjacency matrix of a random graph model is almost surely determined by the larger of the square root of the maximum degree, $\sqrt{m}$, and the weighted average of the squares of the expected degrees, $\tilde{d}$~\cite{chung03}. In this paper we show that, at least for the Poisson with planted hub and power law random graph families, eigenvector centrality fails when the leading eigenvalue corresponds to $\sqrt{m}$ by giving a centrality vector which is too-localized around the highest degree node. In the second half of this paper we introduce \emph{non-backtracking centrality}, calculated from an alternative network representation called the non-backtracking matrix~\cite{krzakala13} or Hashimoto edge matrix~\cite{hashimoto89}, which avoids this failure case of eigenvector centrality while remaining asymptotically equal in the dense limit.
 
-% Erd\H{o}s--R\'enyi
-However, the leading eigenvalue is also bounded by the square root of the largest degree. For networks with unbalanced enough degree distributions, the leading eigenvalue corresponds to the largest hub in the network. Nadakuditi and Newman~\cite{nadakuditi13} analyze this phenomenon for Poisson random graphs with a planted hub. They show the existance of an eigenvalue for the hub vertex, and show that as the hub grows, its eigenvalue overtakes the average-degree eigenvalue.
+We first consider the Poisson random graph with nodes of identical expected degree $c$ and a planted hub of expected degree $k_n$. In Fig.~\ref{fig:transition} we display eigenvector (left column) and non-backtracking (right column) centralities for the hub and all nodes within distance 2, from the same Poisson random graph with size $n=1000000$ and $c = 10$. The rows show increasing hub size, from $k_n = 20$, $k_n = 70$, and $k_n = 120$. The eigenvector centralities, which are proportional to node areas, increase dramatically from $k_n = 70$ to $k_n = 120$ while the non-backtracking centralities increase steadily. We demonstrate below that this sudden increase in centrality is an undesirable side-effect of a phase transition in the leading eigenvalue.
+
+Nadakuditi and Newman give careful analysis of the spectrum of a Poisson random graph with a planted hub~\cite{nadakuditi13}, and show the presence of an eigenvalue corresponding to the average degree at $c+1$ and an eigenvalue corresponding to the hub at $k_n / \sqrt{k_n - c}$. Setting these equal to each other and solving for $k_n$, we see that the hub eigenvalue overtakes the average degree eigenvalue at
+\begin{equation}
+k_n = c(c+1)
+\end{equation}
+
+%talk about global vs local??
 
 \begin{figure}
 \begin{center}
-        \subfigure{\includegraphics[width=0.49\columnwidth]{1.png}}
+        %\subfigure{\includegraphics[width=0.49\columnwidth]{1.png}}
         %\subfigure{\includegraphics[width=0.49\columnwidth]{1h.png}}
         %\subfigure{\includegraphics[width=0.49\columnwidth]{2.png}}
         %\subfigure{\includegraphics[width=0.49\columnwidth]{2h.png}}
