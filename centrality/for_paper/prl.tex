@@ -64,11 +64,6 @@ Network researchers have long been interested in an effective method of measurin
 
 We first consider the Poisson random graph with nodes of identical expected degree $c$ and a planted hub of expected degree $k_n$. In Fig.~\ref{fig:transition} we display eigenvector (left column) and non-backtracking (right column) centralities for the hub and all nodes within distance 2, from the same Poisson random graph with size $n=1000000$ and $c = 10$. The rows show increasing hub size, from $k_n = 20$, $k_n = 70$, and $k_n = 120$. The eigenvector centralities, which are proportional to node areas, increase dramatically from $k_n = 70$ to $k_n = 120$ while the non-backtracking centralities increase steadily. We demonstrate below that this sudden increase in centrality is an undesirable side-effect of a phase transition in the leading eigenvalue.
 
-Nadakuditi and Newman give careful analysis of the spectrum of a Poisson random graph with a planted hub~\cite{nadakuditi13}, and show the presence of an eigenvalue corresponding to the average degree at $c+1$ and an eigenvalue corresponding to the hub at $k_n / \sqrt{k_n - c}$. Setting these equal to each other and solving for $k_n$, we see that the hub eigenvalue overtakes the average degree eigenvalue at
-\begin{equation}
-k_n = c(c+1)
-\end{equation}
-
 %talk about global vs local??
 
 \begin{figure}
@@ -84,21 +79,16 @@ k_n = c(c+1)
 \label{fig:transition}
 \end{figure}
 
-In Figure~\ref{fig:transition} we show how dramatic this can be. We show the same Poisson random graph with an added hub of size $40$, $80$, and $120$, where the area of each node is proportional to its eigenvector centrality on the left. By the third panel the eigenvalue of the hub has become the leading eigenvalue, and the hub's eigenvector centrality is much larger. The right hand side illustrates our proposed solution to this localization, non-backtracking centrality. It shows the exact same graphs, but with node size proportional to non-backtracking centrality. We see more reasonable hub behavoior in this case.
-
-In this paper we follow Nadakuditi and Newman~\cite{nadakuditi13} and let our network be a Poisson random graph of expected degree $c$, plus a single additional hub of degree $k_n$. There is an eigenvalue corresponding to the average degree, $c+1$ and an eigenvalue corresponding to the hub, $k_n / \sqrt{k_n - c}$. We find that these cross over, and thus find a transition in the behavior of the eigenvector, when \begin{equation}\frac{k_n}{\sqrt{k_n - c}} = c+1,\end{equation} or $k_n = c(c+1)$.
-
-After the cross over, there is localization around the hub eigenvector. The hub element is $O(1)$ and its neighbors are $O(...)$, and all other nodes are $O(...)$. We compute an order parameter to measure the degree of localization, which is:
-
+Nadakuditi and Newman give careful analysis of the spectrum of random graphs with arbitrary expected degree, and show that high degree hubs in a network generate their own eigenvalues~\cite{nadakuditi13}. For the Poisson random graph with a planted hub, they calculate a hub eigenvalue of $k_n / \sqrt{k_n - c}$ in addition to the well known eigenvalue corresponding to the average degree of $c+1$. Setting these equal to each other and solving for $k_n$, we see that the hub eigenvalue overtakes the average degree eigenvalue at
 \begin{equation}
-  \omega = \sqrt[4]{\sum_i^n v_i ^ 4}
+k_n = c(c+1).
+\label{eqn:crossover}
 \end{equation}
+Figure~\ref{fig:evalues} shows the results of numerical calculations of the largest (black solid line) and second largest (green dashed line) eigenvalues for a Poisson random graph with a single additional hub of expected degree $k_n$, as a function of $k_n$. These values closely follow the predicted results, and we can see them crossover at $k_n = 110$, according to Eq.~\ref{eqn:crossover}. Below $k_n = 30$ we see that the hub eigenvalue has fallen into the well studied continuous band of eigenvalues, detailed by Nadakuditi and Newman~\cite{nadakuditi13}. Figure~\ref{fig:order-parameter} shows that this crossover results in a phase-transition in the eigenvector elements and localization around the hub. We measure the degree of localization of the leading eigenvector $\vec{x}$ using the order parameter $Q(\vec{x})$, where $Q(\vec{x}) = 1$ corresponds to the most localized eigenvector (a vector with one element equal to $1$ and the rest equal to $0$) and $Q(\vec{x}) = 0$ corresponds to the least localized eigenvector (an infinitely long uniform vector)
+\[Q(\vec{x}) = \sqrt[4]{\sum_{i=1}^n x_i ^ 4}.\]
+We expect a small and steady increase in $Q$ as the hub size increases, but instead find a dramatic phase transition where the eigenvalues crossover, as the majority of the weight of the eigenvector shifts to the hub and its neighbors.
 
-$\omega$ was chosen so that the most localized eigenvector, a vector with one element equal to 1 and the rest equal to 0, gives $\omega = 1$ and the least localized eigenvector, a vector with each element $= 1/\sqrt{n}$, gives $\omega = 1/\sqrt[4]{n}$, which tends to 0 in the limit of large network size. 
-
-Simulation results match nearly identically to the theoretical results. In Figure~\ref{fig:evalues} we see a clear crossing of eigenvalues at $k_n = 110$, as predicted. We also see a sharp phase transition in the order parameter at this point in Figure~\ref{fig:order-parameter}, as the leading eigenvector elements transition from being roughly uniform to dominated by the single element corresponding to the hub.
-
-We also find similar results in more realistic network models. Chung~\etal~\cite{chung03} analyze the leading eigenvalue of networks generated by the configuration model with power law degree distributions of different exponents, and demonstrate a transition from an eigenvalue corresponding to the average squared degree to an eigenvalue corresponding to the square root of the maximum degree, at an exponent of $2.5$. In Figure~\ref{fig:power-law} we see this corresponds to an increase in order parameter, despite the fact that a higher power law exponent is representative of a less uniform degree distribution. This suggests that real-world networks with power-law exponent greater than 2.5 can expect localization around the largest network hub. This might affect algorithms which depend on eigenector-centrality related measures, such as PageRank.
+Chung~\etal~\cite{chung03} predict similar results for random power law graphs.  analyze the leading eigenvalue of networks generated by the configuration model with power law degree distributions of different exponents, and demonstrate a transition from an eigenvalue corresponding to the average squared degree to an eigenvalue corresponding to the square root of the maximum degree, at an exponent of $2.5$. In Figure~\ref{fig:power-law} we see this corresponds to an increase in order parameter, despite the fact that a higher power law exponent is representative of a less uniform degree distribution. This suggests that real-world networks with power-law exponent greater than 2.5 can expect localization around the largest network hub. This might affect algorithms which depend on eigenvector-centrality related measures, such as PageRank.
 
 
 The underlying cause of eigenvector centrality's undesirable properties is an echo chamber effect resulting from each node's centrality being influenced by its neighbors centralities. Each of the hub's neighbors obtain high centrality because they are connected to the hub, which has high centrality. The hub obtains high centrality because it has high degree, and also because it is connected to many nodes which are deemed central on account of their being connected to the hub. This amplification of centrality is what allows for extreme localization, and can be avoided by a centrality measure which takes into account neighbor centrality, but only neighbor centrality derived from nodes \emph{other than oneself}.
@@ -144,6 +134,13 @@ This centrality measure is great, but certainly not an end-all be-all. For examp
 \label{fig:evalues}
 \end{figure}
 
+\begin{figure}
+\begin{center}
+\includegraphics[width=\columnwidth]{nb.eps}
+\end{center}
+\caption{Average neighbor centralities of graph with growing hub.}
+\label{fig:neighbor}
+\end{figure}
 
 \begin{figure}
 \begin{center}
