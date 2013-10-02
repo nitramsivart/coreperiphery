@@ -497,6 +497,27 @@ def mega_graph():
   plt.plot(eig2)
   plt.show()
 
+def simplest_power_law(num=100000):
+  runs = 10
+  samples = 100
+  nodes = num
+  print runs, samples, nodes
+  heights = [0] * samples
+  heightsh = [0] * samples
+  gammarange = np.linspace(2.2, 2.8, samples)
+  for runnum in range(runs):
+    print heights
+    for i, gamma in enumerate(gammarange):
+      print runnum, i
+      seq = custom_create_degree_sequence(nodes, gamma)
+      root_total = sum(x**2 for x in seq)**(.5)
+      #G = custom_configuration_model(seq)
+      heights[i] += sum((x/root_total)**4 for x in seq)
+  heights = [(j / float(runs))**(.25) for j in heights]
+  print heights
+  plt.plot(gammarange, heights)
+  plt.show()
+
 def simpler_power_law(num=2000000):
   runs = 1000
   samples = 100
@@ -593,7 +614,7 @@ def process(str_list):
 #interact(1000000)
 #mega(1000000)
 #write_to_file(1000000)
-simpler_power_law(1000000)
+simplest_power_law(1000000)
 #mega(2000000)
 #cProfile.run('interact()')
 #interact()

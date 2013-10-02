@@ -1,1 +1,3 @@
-\@doendnote{endnote11}{PageRank uses a closely related variant of eigenvector centrality}
+\@doendnote{endnote13}{PageRank uses a closely related variant of eigenvector centrality}
+\@doendnote{endnote14}{As we show below, though network factors such as assortativity and clustering may influence the centrality measure, they do not change the presence of a high lying eigenvalues corresponding to hub nodes.}
+\@doendnote{endnote15}{Interestingly, though many networks have a power-law exponent $2 < \protect \mathrm  {B}< 2.5$, and many approach $\protect \mathrm  {B}= 2.5$ we found networks with $\protect \mathrm  {B}> 2.5$ to be very rare\protect \nobreakspace  {}\cite {newman03}.}
