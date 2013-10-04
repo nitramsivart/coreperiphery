@@ -36,6 +36,9 @@
 \newcommand{\mat}{\mathbf}
 \renewcommand{\vec}{\mathbf}
 \newcommand\Beta{\mathrm{B}}
+\newcommand\colora{black }
+\newcommand\colorb{red }
+\newcommand\colorc{green }
 
 \newcommand\pin{p_\textrm{in}}
 \newcommand\pout{p_\textrm{out}}
@@ -68,14 +71,14 @@ We first consider the Poisson random graph with nodes of identical expected degr
 
 \begin{figure}
 \begin{center}
-        %\subfigure{\includegraphics[width=0.49\columnwidth]{1.png}}
-        %\subfigure{\includegraphics[width=0.49\columnwidth]{1h.png}}
-        %\subfigure{\includegraphics[width=0.49\columnwidth]{2.png}}
-        %\subfigure{\includegraphics[width=0.49\columnwidth]{2h.png}}
-        %\subfigure{\includegraphics[width=0.49\columnwidth]{3.png}}
-        %\subfigure{\includegraphics[width=0.49\columnwidth]{3h.png}}
+        \subfigure{\includegraphics[width=0.49\columnwidth]{1.png}}
+        \subfigure{\includegraphics[width=0.49\columnwidth]{1h.png}}
+        \subfigure{\includegraphics[width=0.49\columnwidth]{2.png}}
+        \subfigure{\includegraphics[width=0.49\columnwidth]{2h.png}}
+        \subfigure{\includegraphics[width=0.49\columnwidth]{3.png}}
+        \subfigure{\includegraphics[width=0.49\columnwidth]{3h.png}}
 \end{center}
-\caption{Transition for the same Poisson random graph with growing hub size.}
+\caption{Three snapshots of the same Poisson random graph with a growing hub at hubsizes of 20, 70, and 120. In the left column node area is proportional to eigenvector centrality, in the right column node area is proportional to non-backtracking centrality. The black node is the hub, the green (light grey) nodes are its neighbors, and all other nodes are red (grey).}
 \label{fig:transition}
 \end{figure}
 
@@ -84,7 +87,7 @@ We first consider the Poisson random graph with nodes of identical expected degr
 \begin{center}
 \includegraphics[width=\columnwidth]{eig.eps}
 \end{center}
-\caption{Eigenvalues for Poisson random graph ($n=1000000$, $c=10$) with a planted hub, as a function of hub size. The leading and second leading eigenvalues of the adjacency matrix are given by the solid black and dotted green lines, respectively. The leading eigenvalue of the non-backtracking matrix is given by the dashed red line. The same graph was used for all measurements, with hub size increments of 1.}
+\caption{Eigenvalues for Poisson random graph ($n=1000000$, $c=10$) with a planted hub, as a function of hub size. The leading and second leading eigenvalues of the adjacency matrix are given by the solid \colora and dotted \colorc lines, respectively. The leading eigenvalue of the non-backtracking matrix is given by the dashed \colorb line. The same graph was used for all measurements, with hub size increments of 1.}
 \label{fig:evalues}
 \end{figure}
 Nadakuditi and Newman give careful analysis of the spectrum of random graphs with arbitrary expected degree, and show that high degree hubs in a network generate their own eigenvalues~\cite{nadakuditi13}. For the Poisson random graph with a planted hub, they calculate a hub eigenvalue of $k_n / \sqrt{k_n - c}$ in addition to the well known eigenvalue corresponding to the average degree of $c+1$. Setting these equal to each other and solving for $k_n$, we see that the hub eigenvalue overtakes the average degree eigenvalue at
@@ -92,7 +95,7 @@ Nadakuditi and Newman give careful analysis of the spectrum of random graphs wit
 k_n = c(c+1).
 \label{eqn:crossover}
 \end{equation}
-Figure~\ref{fig:evalues} shows the results of numerical calculations of the largest (black solid line) and second largest (green dashed line) eigenvalues for a Poisson random graph with a single additional hub of expected degree $k_n$, as a function of $k_n$. These values closely follow the predicted results, and we can see them crossover at $k_n = 110$, according to Eq.~\ref{eqn:crossover}. Below $k_n = 30$ we see that the hub eigenvalue has fallen into the well studied continuous band of eigenvalues, detailed by Nadakuditi and Newman~\cite{nadakuditi13}. Figure~\ref{fig:order-parameter} shows that this crossover results in a phase-transition in the eigenvector elements and localization around the hub. We measure the degree of localization of the leading eigenvector $\vec{x}$ using the order parameter $q(\vec{x})$, where $q(\vec{x}) = 1$ corresponds to the most localized eigenvector (a vector with one element equal to $1$ and the rest equal to $0$) and $q(\vec{x}) = 0$ corresponds to the least localized eigenvector (an infinitely long uniform vector)
+Figure~\ref{fig:evalues} shows the results of numerical calculations of the largest (\colora solid line) and second largest (green dashed line) eigenvalues for a Poisson random graph with a single additional hub of expected degree $k_n$, as a function of $k_n$. These values closely follow the predicted results, and we can see them crossover at $k_n = 110$, according to Eq.~\ref{eqn:crossover}. Below $k_n = 30$ we see that the hub eigenvalue has fallen into the well studied continuous band of eigenvalues, detailed by Nadakuditi and Newman~\cite{nadakuditi13}. Figure~\ref{fig:order-parameter} shows that this crossover results in a phase-transition in the eigenvector elements and localization around the hub. We measure the degree of localization of the leading eigenvector $\vec{x}$ using the order parameter $q(\vec{x})$, where $q(\vec{x}) = 1$ corresponds to the most localized eigenvector (a vector with one element equal to $1$ and the rest equal to $0$) and $q(\vec{x}) = 0$ corresponds to the least localized eigenvector (an infinitely long uniform vector)
 \begin{equation}
 q(\vec{x}) = \sqrt[4]{\sum_{i=1}^n x_i ^ 4}.
 \label{eqn:op}
@@ -103,15 +106,15 @@ We expect a small and steady increase in $q$ as the hub size increases, but inst
 \begin{center}
 \includegraphics[width=\columnwidth]{op.eps}
 \end{center}
-\caption{Order parameter for Poisson random graph ($n=1000000$, $c=10$) with a planted hub, as a function of hub size. The order parameter (Eq.~\eqref{eqn:op}) of the eigenvector centrality vector is given by the solid black line. The order parameter of the non-backtracking centrality vector is given by the dashed red line. The same graph was used for all measurements, with hub size increments of 1.}
+\caption{Order parameter for Poisson random graph ($n=1000000$, $c=10$) with a planted hub, as a function of hub size. The order parameter (Eq.~\eqref{eqn:op}) of the eigenvector centrality vector is given by the solid \colora line. The order parameter of the non-backtracking centrality vector is given by the dashed \colorb line. The same graph was used for all measurements, with hub size increments of 1.}
 \label{fig:order-parameter}
 \end{figure}
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=\columnwidth]{power_plot.png}
+\includegraphics[width=\columnwidth]{power.eps}
 \end{center}
-\caption{Order parameter for a random graph ($n=1000000$) with expected degrees chosen according to a power-law distribution, as a function of power-law exponent $\beta$. The order parameter of the eigenvector centrality vector is given by the solid black line. The order parameter of the non-backtracking centrality vector is given by the dashed red line. Order parameters were averaged over $x$ (TBD) graph instances.}
+\caption{Order parameter for a random graph ($n=1000000$) with expected degrees chosen according to a power-law distribution, as a function of power-law exponent $\beta$. The order parameter of the eigenvector centrality vector is given by the solid \colora line. The order parameter of the non-backtracking centrality vector is given by the dashed \colorb line. Order parameters were averaged over $x$ (TBD) graph instances.}
 \label{fig:power-law}
 \end{figure}
 
@@ -169,9 +172,9 @@ a_i = \sum_{j\rightarrow i} v_{j\rightarrow i}.
 \end{equation}
 Thus these two centrality measures differ only by their inclusion or exclusion of non-backtracking edges, which, in the limit of dense graphs, are a vanishing fraction of the edges in each row. Thus these centrality measures are only noticeably different for sparse graphs.
 
-Non-backtracking centrality neatly resolves the failure cases of eigenvector centrality discussed above. In the right column of Figure~\ref{fig:transition}, which displays nodes proportional to their centrality for three increasing hub sizes, we see that non-backtracking centralities increase gradually, in contrast to the results of the left column for identical graphs. Additionally, before the transition in the third row, node eigenvector and non-backtracking centralities are roughly equal. In Figure~\ref{fig:evalues}, the red dashed line displays the leading eigenvalue of $\mat{B}$ as a function of hub size. We notice there is no eigenvalue transition, instead the eigenvalue stays constant at the average degree of $c$ (not $c+1$ because backtracking edges are excluded), which is hardly effected by hub growth in a million node network.
+Non-backtracking centrality neatly resolves the failure cases of eigenvector centrality discussed above. In the right column of Figure~\ref{fig:transition}, which displays nodes proportional to their centrality for three increasing hub sizes, we see that non-backtracking centralities increase gradually, in contrast to the results of the left column for identical graphs. Additionally, before the transition in the third row, node eigenvector and non-backtracking centralities are roughly equal. In Figure~\ref{fig:evalues}, the \colorb dashed line displays the leading eigenvalue of $\mat{B}$ as a function of hub size. We notice there is no eigenvalue transition, instead the eigenvalue stays constant at the average degree of $c$ (not $c+1$ because backtracking edges are excluded), which is hardly effected by hub growth in a million node network.
 
-The red dashed line in Figure~\ref{fig:order-parameter} demonstrates the order parameter for the non-backtracking centrality vector, $q(\vec{b})$ as a function of hub size. Instead of a localization transition as before, we see negligible changes as hub size increases. Our results for power-law graphs are most interesting. The red dashed line in Figure~\ref{fig:power-law} shows $q(\vec{b})$ for a random graph with a power-law degree distribution as a function of the power-law exponent $\beta$. We find opposite behavior from the power-law case, decreasing $q$ for increasing $\beta$. Table~\ref{tab:power} helps to explain this by showing centralities for two graphs with different power-law parameters. A graph with low power-law parameter gives more high degree nodes, and thus is less likely to give one anomalously high-degree hub. The node of degree 5461, for $\beta = 2.9$ has significantly higher degree than the rest of its neighbors, leading to extreme localization in the eigenvector centrality vector. Non-backtracking centrality avoids this localization and distributes more centrality to the plethora of low-degree nodes, leading to a lower $q$.
+The \colorb dashed line in Figure~\ref{fig:order-parameter} demonstrates the order parameter for the non-backtracking centrality vector, $q(\vec{b})$ as a function of hub size. Instead of a localization transition as before, we see negligible changes as hub size increases. Our results for power-law graphs are most interesting. The \colorb dashed line in Figure~\ref{fig:power-law} shows $q(\vec{b})$ for a random graph with a power-law degree distribution as a function of the power-law exponent $\beta$. We find opposite behavior from the power-law case, decreasing $q$ for increasing $\beta$. Table~\ref{tab:power} helps to explain this by showing centralities for two graphs with different power-law parameters. A graph with low power-law parameter gives more high degree nodes, and thus is less likely to give one anomalously high-degree hub. The node of degree 5461, for $\beta = 2.9$ has significantly higher degree than the rest of its neighbors, leading to extreme localization in the eigenvector centrality vector. Non-backtracking centrality avoids this localization and distributes more centrality to the plethora of low-degree nodes, leading to a lower $q$.
 
 Naive computation of non-backtracking centrality from the $2m \times 2m$ non-backtracking matrix can be significantly more laborious than the computation of eigenvector centrality from the $n \times n$ adjacency matrix. From the non-backtracking matrix Krzakala~\etal\ derive a $2n \times 2n$ matrix, 
 \begin{equation}

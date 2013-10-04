@@ -24,17 +24,19 @@ def eig_plots():
     nb.append(vals[6])
     nbh.append(vals[7])
 
-  plt.plot(hubsize, eig1, color='k', ls='-',linewidth=5.0)
-  plt.plot(hubsize, eig2, color='g', ls=':',linewidth=5.0)
-  plt.plot(hubsize, eigh, color='r', ls='--',linewidth=5.0)
+  plt.plot(hubsize, eig1, color='k', ls='-',linewidth=3.5)
+  plt.plot(hubsize, eig2, color='#34D800', ls=':',linewidth=3.5)
+  plt.plot(hubsize, eigh, color='r', ls='--',linewidth=3.5)
+  plt.title("Leading eigenvalue vs. hub size")
   plt.savefig("eig.eps", bbox_inches="tight")
   plt.figure()
-  plt.plot(hubsize, op, color='k', ls='-',linewidth=5.0)
-  plt.plot(hubsize, oph, color='r', ls='--',linewidth=5.0)
+  plt.plot(hubsize, op, color='k', ls='-',linewidth=3.5)
+  plt.plot(hubsize, oph, color='r', ls='--',linewidth=3.5)
+  plt.title("Order parameter vs. hub size")
   plt.savefig("op.eps", bbox_inches="tight")
   plt.figure()
-  plt.plot(hubsize, nb, color='k', ls='-',linewidth=5.0)
-  plt.plot(hubsize, nbh, color='r', ls='--',linewidth=5.0)
+  plt.plot(hubsize, nb, color='k', ls='-',linewidth=3.5)
+  plt.plot(hubsize, nbh, color='r', ls='--',linewidth=3.5)
   plt.savefig("nb.eps", bbox_inches="tight")
   plt.show()
 
@@ -53,10 +55,10 @@ def power_plots():
       power_hashi = [x+y for x, y in zip(eval(line), power_hashi)]
   power_adj = [(x/total_weight)**(1./4.) for x in power_adj]
   power_hashi = [(x/total_weight)**(1./4.) for x in power_hashi]
-  plt.plot(gamma_range, power_adj)
-  plt.figure()
-  plt.plot(gamma_range, power_hashi)
-  plt.show()
+  plt.plot(gamma_range, power_adj, color='k', ls='-',linewidth=3.5)
+  plt.plot(gamma_range, power_hashi, color='r', ls='--',linewidth=3.5)
+  plt.title("Order parameter vs. power-law exponent")
+  plt.savefig("power.eps", bbox_inches="tight")
 
 def localization(name):
   position = eval(open('data/positions.txt').readline())
@@ -105,23 +107,26 @@ def localization(name):
   nx.draw(H,edgelist=H.edges(), linewidths=.01, width=.1, pos=position,
           nodelist=[0], node_shape='o', node_size=eig[0],
           node_color='k', with_labels=False)
+          #node_color='#0F4DA8', with_labels=False)
 
   for index, count in enumerate(counts):
     if count in H.neighbors(0):
       nx.draw(H,edgelist=[], linewidths=.01, width=.1, pos=position,
               nodelist=[count], node_shape='o', node_size=eig[index],
-              node_color='r', alpha=.65, with_labels=False)
+              node_color='#34D800', alpha=.85, with_labels=False)
+              #node_color='#FF6400', alpha=.85, with_labels=False)
 
   for index, count in enumerate(counts):
     if count not in H.neighbors(0) and count != 0:
       nx.draw(H,edgelist=[], linewidths=.01, width=.1, pos=position,
               nodelist=[count], node_shape='o', node_size=eig[index],
-              node_color='b', alpha=.65, with_labels=False)
+              node_color='r', alpha=.85, with_labels=False)
 
   print "done drawing"
   plt.savefig("%s.png"%name, dpi=100, bbox_inches='tight')
-#power_plots()
-#exit()
+eig_plots()
+power_plots()
+exit()
 #cProfile.run('localization("1")')
 localization("1")
 localization("2")
