@@ -102,26 +102,26 @@ def localization(name):
   plt.ylim(ymin,ymax)
   '''
 
-  nx.draw(H,edgelist=H.edges(), linewidths=.1, width=.1, pos=position,
+  nx.draw(H,edgelist=H.edges(), linewidths=.01, width=.1, pos=position,
           nodelist=[0], node_shape='o', node_size=eig[0],
           node_color='k', with_labels=False)
 
   for index, count in enumerate(counts):
     if count in H.neighbors(0):
-      nx.draw(H,edgelist=[], linewidths=.1, width=.1, pos=position,
+      nx.draw(H,edgelist=[], linewidths=.01, width=.1, pos=position,
               nodelist=[count], node_shape='o', node_size=eig[index],
-              node_color='r', alpha=.8, with_labels=False)
+              node_color='r', alpha=.65, with_labels=False)
 
   for index, count in enumerate(counts):
     if count not in H.neighbors(0) and count != 0:
-      nx.draw(H,edgelist=[], linewidths=.1, width=.1, pos=position,
+      nx.draw(H,edgelist=[], linewidths=.01, width=.1, pos=position,
               nodelist=[count], node_shape='o', node_size=eig[index],
-              node_color='b', alpha=.8, with_labels=False)
+              node_color='b', alpha=.65, with_labels=False)
 
   print "done drawing"
-  plt.savefig("%s.png"%name, dpi=300, bbox_inches='tight')
-power_plots()
-exit()
+  plt.savefig("%s.png"%name, dpi=100, bbox_inches='tight')
+#power_plots()
+#exit()
 #cProfile.run('localization("1")')
 localization("1")
 localization("2")

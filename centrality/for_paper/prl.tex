@@ -84,28 +84,89 @@ Nadakuditi and Newman give careful analysis of the spectrum of random graphs wit
 k_n = c(c+1).
 \label{eqn:crossover}
 \end{equation}
-Figure~\ref{fig:evalues} shows the results of numerical calculations of the largest (black solid line) and second largest (green dashed line) eigenvalues for a Poisson random graph with a single additional hub of expected degree $k_n$, as a function of $k_n$. These values closely follow the predicted results, and we can see them crossover at $k_n = 110$, according to Eq.~\ref{eqn:crossover}. Below $k_n = 30$ we see that the hub eigenvalue has fallen into the well studied continuous band of eigenvalues, detailed by Nadakuditi and Newman~\cite{nadakuditi13}. Figure~\ref{fig:order-parameter} shows that this crossover results in a phase-transition in the eigenvector elements and localization around the hub. We measure the degree of localization of the leading eigenvector $\vec{x}$ using the order parameter $Q(\vec{x})$, where $Q(\vec{x}) = 1$ corresponds to the most localized eigenvector (a vector with one element equal to $1$ and the rest equal to $0$) and $Q(\vec{x}) = 0$ corresponds to the least localized eigenvector (an infinitely long uniform vector)
-\[Q(\vec{x}) = \sqrt[4]{\sum_{i=1}^n x_i ^ 4}.\]
-We expect a small and steady increase in $Q$ as the hub size increases, but instead find a dramatic phase transition where the eigenvalues crossover, as the majority of the weight of the eigenvector shifts to the hub and its neighbors.
+Figure~\ref{fig:evalues} shows the results of numerical calculations of the largest (black solid line) and second largest (green dashed line) eigenvalues for a Poisson random graph with a single additional hub of expected degree $k_n$, as a function of $k_n$. These values closely follow the predicted results, and we can see them crossover at $k_n = 110$, according to Eq.~\ref{eqn:crossover}. Below $k_n = 30$ we see that the hub eigenvalue has fallen into the well studied continuous band of eigenvalues, detailed by Nadakuditi and Newman~\cite{nadakuditi13}. Figure~\ref{fig:order-parameter} shows that this crossover results in a phase-transition in the eigenvector elements and localization around the hub. We measure the degree of localization of the leading eigenvector $\vec{x}$ using the order parameter $q(\vec{x})$, where $q(\vec{x}) = 1$ corresponds to the most localized eigenvector (a vector with one element equal to $1$ and the rest equal to $0$) and $q(\vec{x}) = 0$ corresponds to the least localized eigenvector (an infinitely long uniform vector)
+\[q(\vec{x}) = \sqrt[4]{\sum_{i=1}^n x_i ^ 4}.\]
+We expect a small and steady increase in $q$ as the hub size increases, but instead find a dramatic phase transition where the eigenvalues crossover, as the majority of the weight of the eigenvector shifts to the hub and its neighbors.
 
-One might dismiss this localization, saying that the Poisson random graph is not representative of real world networks. However, eigenvector centrality may fail on any network with low average degree and high degree variability. For example, Chung~\etal find a similar crossover for random power law graphs~\cite{chung03}. They show that, with high probability, networks with power law exponent $\Beta > 2.5$ have a leading eigenvalue corresponding to the square root of the maximum degree, $\sqrt{m}$, while those with $\Beta < 2.5$ have a leading eigenvalue corresponding to average squared degree, $\tilde{d}$. In Figure~\ref{fig:power-law} we see this effect in action. As the power law exponent increases the order parameter increases, despite the fact that the Gini coefficient is decreasing. % I can derive this if necessary. Currently this power law paragraph is not as dramatic as desired, what is a good null model for how centrality should behave? Hashimoto centrality has a phase transition at 2.5, which is good?
-Real world applications of eigenvector centrality to networks known to have power law degree distributions are ubiquitous~\cite{canright06,page99}. Our results suggest that eigenvector centrality may overweight the centrality of high degree nodes~\footnote{As we show below, though network factors such as assortativity and clustering may influence the centrality measure, they do not change the presence of a high lying eigenvalues corresponding to hub nodes.}, especially when the power-law exponent is above $2.5$~\footnote{Interestingly, though many networks have a power-law exponent $2 < \Beta < 2.5$, and many approach $\Beta = 2.5$ we found networks with $\Beta > 2.5$ to be very rare~\cite{newman03}.}.
+One might dismiss this localization, saying that the Poisson random graph is not representative of real world networks. However, eigenvector centrality may fail on any network with low average degree and high degree variability. For example, Chung~\etal find a similar crossover for random power law graphs~\cite{chung03}. They show that, with high probability, networks with power law exponent $\beta > 2.5$ have a leading eigenvalue corresponding to the square root of the maximum degree, $\sqrt{m}$, while those with $\beta < 2.5$ have a leading eigenvalue corresponding to average squared degree, $\tilde{d}$. In Figure~\ref{fig:power-law} we see this effect in action. As the power law exponent increases the order parameter increases, despite the fact that the Gini coefficient is decreasing. % I can derive this if necessary. Currently this power law paragraph is not as dramatic as desired, what is a good null model for how centrality should behave? Hashimoto centrality has a phase transition at 2.5, which is good?
+Real world applications of eigenvector centrality to networks known to have power law degree distributions are ubiquitous~\cite{canright06,page99}. Our results suggest that eigenvector centrality may overweight the centrality of high degree nodes~\footnote{As we show below, though network factors such as assortativity and clustering may influence the centrality measure, they do not change the presence of a high lying eigenvalues corresponding to hub nodes.}, especially when the power-law exponent is above $2.5$~\footnote{Interestingly, though many networks have a power-law exponent $2 < \beta < 2.5$, and many approach $\beta = 2.5$ we found networks with $\beta > 2.5$ to be very rare~\cite{newman03}.}.
+
+A heuristic explanation of this failure mode follows the behavior of an echo-chamber.
+A hub, having high degree, gives its neighbors high centrality. These now-important neighbors further amplify the centrality of the hub, despite the fact that their high centrality was due primarily to the high centrality of the hub.
+%My idea for the following section is to show that a very localized vector gives a high eigenvalue bound. It is also very close to being an eigenvector itself (plus some constant factors), and gives an eigenvalue which is within a small factor of the (proven) leading eigenvalue. The centrality of the hub is supported by the centrality of its neighbors, whose centralities are supported by the centrality of the hub.
+This can also be seen through analysis of the Rayleigh quotient, which gives a bound on the leading eigenvalue,
+\begin{equation}
+\lambda_1 \geq \frac{\vec{x}^{T} A \vec{x}}{\vec{x}^T\vec{x}}, \label{eq:rayleigh}
+\end{equation}
+for any $\vec{x}$. If we choose $\vec{x}$ to be localized around a high degree hub, $h$ of degree $k_h$:
+\begin{equation*}
+x_i = 
+\begin{cases}
+  \sqrt{k_h} & \text{if } i=h\\
+  1          & \text{if } A_{ih} = 1\\
+  0          & \text{otherwise}
+\end{cases}.
+\end{equation*}
+Then
+\begin{equation}
+\sum_j A_{ij} x_j \geq
+  \left.\begin{cases}
+  k_h & \text{if } i=h\\
+  \sqrt{k_h} & \text{if } A_{ih} = 1\\
+  0          & \text{otherwise}
+  \end{cases} \right\} = \sqrt{k_h} x_i.
+  \label{eq:adj_ineq}
+\end{equation}
+Multiplying both sides of Eq.~\eqref{eq:adj_ineq} by $x_i$, summing over $i$, and using Eq.~\eqref{eq:rayleigh},
+\begin{equation*}
+\lambda_1 \geq \frac{\vec{x}^{T} A \vec{x}}{\vec{x}^T\vec{x}} \geq \sqrt{k_h}.
+\end{equation*}
+Though an approximation, we see that a vector localized around the hub is very nearly an eigenvector with an eigenvalue which increases as the hub size increases. The hub's large eigenvector element is supported by its neighbors' large eigenvector elements, while the neighbors' large eigenvector elements are supported by the hub's large eigenvector element.
+
+Non-backtracking centrality avoids this problem by making a node's centrality proportional to its neighbors centralities, but \emph{excluding} the portion of each neighbor's centrality due to the node itself. We formally define non-backtracking centrality in terms of the non-backtracking matrix, defined as follows~\cite{newman13}. One first converts the network into a directed network by replacing each undirected edge $\{i, j\}$ with two directed edges pointing in opposite directions, which we label indicating the direction they point, $i \rightarrow j$ and $j \rightarrow i$. The non-backtracking matrix $\mat{B}$ is a $2m \times 2m$ non-symmetric matrix with one row and one column for each directed edge and elements
+\begin{equation}
+B_{i\rightarrow j, k \rightarrow l} = \delta_{il}(1-\delta_{jk}),
+\end{equation}
+where $\delta_{ij}$ is the Kronecker delta. In other words, all elements are zero unless edge $i\rightarrow j$ points out of the same vertex that edge $k \rightarrow l$ points into, and edges $i \rightarrow j$ and $k \rightarrow l$ are not pointing in opposite directions between the same pair of vertices. Let $\vec{v}$ be the leading eigenvector of $\mat{B}$, normalized and chosen with positive elements. We define a node $i$'s non-backtracking centrality, $b_i$, to be the sum of the elements of $v$ for $i$'s incoming edges:
+\begin{equation*}
+b_i = \sum_{j\rightarrow i} v_{j\rightarrow i}
+\end{equation*}
+
+We can similarly define an edge matrix version of the Adjacency matrix, $\mat{A'}$:
+\begin{equation*}
+A'_{i\rightarrow j, k \rightarrow l} = \delta_{il}
+\end{equation*}
+Letting $\vec{v}$ be the leading eigenvector of $\mat{A'}$, node $i$'s eigenvector centrality $a_i$ can be expressed
+\begin{equation}
+a_i = \sum_{j\rightarrow i} v_{j\rightarrow i}.
+\end{equation}
+Thus these two centrality measures differ only by their inclusion or exclusion of non-backtracking edges, which, in the limit of dense graphs, are a vanishing fraction of the edges in each row. Thus these centrality measures are only noticeably different for sparse graphs.
+
+Non-backtracking centrality neatly resolves the failure cases of eigenvector centrality discussed above. In the right column of Figure~\ref{fig:transition}, which displays nodes proportional to their centrality for three increasing hub sizes, we see that non-backtracking centralities increase gradually, in contrast to the results of the left column for identical graphs. Additionally, before the transition in the third row, node eigenvector and non-backtracking centralities are roughly equal. In Figure~\ref{fig:evalues}, the red dashed line displays the leading eigenvalue of $\mat{B}$ as a function of hub size. We notice there is no eigenvalue transition, instead the eigenvalue stays constant at the average degree of $c$ (not $c+1$ because backtracking edges are excluded), which is hardly effected by hub growth in a million node network.
+
+The red dashed line in Figure~\ref{fig:order-parameter} demonstrates the order parameter for the non-backtracking centrality vector, $q(\vec{b})$ as a function of hub size. Instead of a localization transition as before, we see negligible changes as hub size increases. Our results for power law graphs are most interesting. Now, instead of increasing $q$ as a function of $\beta$, we find decreasing $q$. This can be explained by inspecting some representative centralities for two graphs:
+
+\begin{table}
+\centering
+\begin{tabular}{|l|l|l|} \hline
+\multicolumn{3}{|c|}{$\beta=2.1$} \\ \hline
+Degree & Eigenvector & Non-backtracking \\ \hline
+42172 & 0.1397 & 0.1288 \\ \hline
+67039 & 0.1859 & 0.1545 \\ \hline
+92258 & 0.2288 & 0.1710 \\ \hline
+92563 & 0.2296 & 0.1713 \\ \hline \hline
+\multicolumn{3}{|c|}{$\beta=2.9$} \\ \hline 
+Degree & Eigenvector & Non-backtracking \\ \hline
+923  & 0.01375 & 0.04516 \\ \hline
+1513 & 0.01814 & 0.06858 \\ \hline
+1867 & 0.02294 & 0.08527 \\ \hline
+5461 & 0.71044 & 0.17090 \\ \hline
+\end{tabular}
+\end{table}
 
 
 
-
-analyze the leading eigenvalue of networks generated by the configuration model with power law degree distributions of different exponents, and demonstrate a transition from an eigenvalue corresponding to the average squared degree to an eigenvalue corresponding to the square root of the maximum degree, at an exponent of $2.5$. In Figure~\ref{fig:power-law} we see this corresponds to an increase in order parameter, despite the fact that a higher power law exponent is representative of a less uniform degree distribution. This suggests that real-world networks with power-law exponent greater than 2.5 can expect localization around the largest network hub. This might affect algorithms which depend on eigenvector-centrality related measures, such as PageRank.
-
-
-The underlying cause of eigenvector centrality's undesirable properties is an echo chamber effect resulting from each node's centrality being influenced by its neighbors centralities. Each of the hub's neighbors obtain high centrality because they are connected to the hub, which has high centrality. The hub obtains high centrality because it has high degree, and also because it is connected to many nodes which are deemed central on account of their being connected to the hub. This amplification of centrality is what allows for extreme localization, and can be avoided by a centrality measure which takes into account neighbor centrality, but only neighbor centrality derived from nodes \emph{other than oneself}.
-
-This concept is perfectly encapsulated by the non-backtracking matrix, or Hashimoto matrix, which has been employed and analyzed in a variety of contexts~\cite{hashimoto89,angel07,krzakala13}. The non-backtracking matrix is a $2m \times 2m$ representation of a graph in which undirected graph is turned into two directed edges, and edge $(i,j)$ is connected to every edge leaving $j$ except for its reciprocal, $(j,i)$.
-
-This forbidding of backtracking prevents the echo chamber effect of eigenvector centrality, and solves all of the problems we've seen so far. (We analyze each of the figures and show how much more consistent it is).
-
-We can see that non-backtracking centrality largely corresponds to eigenvector centrality. This correspondance is exact in the limit of large networks, as the one excluded edge from each edge is asymptotically negligible.
-
-A $2m \times 2m$ matrix can be significantly larger than the original $n \times n$ adjacency matrix, and could raise concerns of intractibility. As shown in by Krzakala~\etal~\cite{krzakala13}, it is possible to compute the non-backtracking centrality of each node using only a $2n \times 2n$ matrix (show the matrix).
+A $2m \times 2m$ matrix can be significantly larger than the original $n \times n$ adjacency matrix, and could raise concerns of intractability. As shown in by Krzakala~\etal~\cite{krzakala13}, it is possible to compute the non-backtracking centrality of each node using only a $2n \times 2n$ matrix (show the matrix).
 
 
 
@@ -115,9 +176,9 @@ This centrality measure is great, but certainly not an end-all be-all. For examp
 \begin{enumerate}
   \item Regular eigenvector centrality doesn't work.
   \begin{itemize}
-	\item Introduce Hub model, talk about localization, order parameter.
-	\item Give numerical results on model, real networks?
-	\item Power law network theoretical results + numerics.
+  	\item Introduce Hub model, talk about localization, order parameter.
+  	\item Give numerical results on model, real networks?
+  	\item Power law network theoretical results + numerics.
   \end{itemize}
   \item Hashimoto matrix
   \begin{itemize}
