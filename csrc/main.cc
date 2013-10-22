@@ -1,11 +1,11 @@
 #include "main.h"
 
-const int n = 300;
+const int n = 1000;
 const int nodes = 2*n;
 
 
-double *messages = new double[nodes*nodes*2];
-double *mprob = new double[nodes*2];
+double ***messages = new double**[nodes];
+double **mprob = new double*[nodes];
 double *field = new double[2];
 
 double omega[4]; //= {C_cc/n, C_cp/n, C_cp/n, C_pp/n};
@@ -15,12 +15,20 @@ double eta[2] = {.5, .5};
 std::vector<std::vector<int> > graph(nodes);
 
 int main(int argc, char* argv[]) {
+  // Allocate messages, mprob arrays
+  clock_t t;
+  for(int i = 0; i < nodes; ++i) {
+    messages[i] = new double*[nodes];
+    for(int j = 0; j < nodes; ++j)
+      messages[i][j] = new double[2];
+    mprob[i] = new double[2];
+  }
+  printf("cycles1: %d\n", (int)(clock() - t));
+  t = clock();
   srand(time(NULL));
-  double C_cc = 30;
+  double C_cc = 22;
   double C_cp = 20;
-  double C_pp = 10;
-  time_t begin, end;
-  time(&begin);
+  double C_pp = 18;
   for(; C_pp < C_cp; ) {
     C_pp++;
     C_cc--;
@@ -30,8 +38,8 @@ int main(int argc, char* argv[]) {
     omega[3] = C_pp/n;
 
 
-    std::vector<std::vector<int> > temp_graph(nodes);
-    graph = temp_graph;
+    graph.clear();
+    graph.resize(nodes);
 
     for(int i = 0; i < nodes; i++) {
       for(int j = i+1; j < n; j++) {
@@ -47,42 +55,48 @@ int main(int argc, char* argv[]) {
         }
       }
     }
+    printf("cycles2: %d\n", (int)(clock() - t));
+    t = clock();
 
     // initialize messages and mprob
     for(int i = 0; i < nodes; i++) {
       //printf("(%d)\n",graph[i].size());
       double a = .60;
-      mprob[A2_TO_I(i,0)] = a;
-      mprob[A2_TO_I(i,1)] = 1-a;
+      mprob[i][0] = a;
+      mprob[i][1] = 1-a;
       for(int j = 0; j < nodes; j++) {
-        messages[A3_TO_I(i,j,0)] = (i == j ? 0 : a);
-        messages[A3_TO_I(i,j,1)] = (i == j ? 0 : 1-a);
+        messages[i][j][0] = (i == j ? 0 : a);
+        messages[i][j][1] = (i == j ? 0 : 1-a);
       }
     }
+    printf("cycles3: %d\n", (int)(clock() - t));
+    t = clock();
 
     // compute field
     calc_field();
-    for(int loop = 0; loop < 4; loop++) {
+    printf("cycles4: %d\n", (int)(clock() - t));
+    t = clock();
+    for(int loop = 0; loop < 2; loop++) {
       // compute messages, mprob, and update field
       calc_messages_f();
-
-      // compute mprob
-      // calc_mprob();
-      //printf("Loop number: %d\n", loop);
-      //for(int i = 0; i < nodes; i+=100) {
-      //  printf("%f\n", mprob[A2_TO_I(i,0)]);
-      //}
     }
+    printf("cycles5: %d\n", (int)(clock() - t));
+    t = clock();
 
     int correct = 0;
     for(int i = 0; i < nodes; i++) {
-      correct += (i < n xor mprob[A2_TO_I(i,0)] < .5 ? 1 : 0);
+      correct += (i < n xor mprob[i][0] < .5 ? 1 : 0);
     }
     printf("C_pp: %d, correct: %d\n", (int)C_pp, (int)correct);
   }
-  time(&end);
-  printf("Time: %f\n", difftime(end, begin));
 
+  // De-Allocate memory
+  for(int i = 0; i < nodes; ++i) {
+    for(int j = 0; j < nodes; ++j)
+      delete[] messages[i][j];
+    delete[] messages[i];
+    delete[] mprob[i];
+  }
   delete[] messages;
   delete[] mprob;
   delete[] field;
@@ -94,43 +108,12 @@ void calc_field() {
     for(int i = 0; i < nodes; i++) {
       double sum_total = 0.;
       for(int s = 0; s < 2; s++)
-        sum_total += (1-omega[2*s + r]) * mprob[A2_TO_I(i, s)];
+        sum_total += (1-omega[2*s + r]) * mprob[i][s];
       prod_total += log(sum_total);
     }
     field[r] = exp(prod_total);
   }
-}
-
-void calc_messages() {
-  for(int u = 0; u < nodes; u++) {
-    if(u % 10000 == 0)
-      printf("node: %d\n", u);
-    for(int v = 0; v < nodes; v++) {
-      if(u == v) continue;
-      double total = 0;
-      for(int r = 0; r < 2; r++) {
-        double prod_total = 0.;
-        //std::vector<int>::iterator it = graph[u].begin();
-        for(int index = 0; index < graph[u].size(); ++index) {
-          int w = graph[u][index];
-          if(w == v) continue;
-          double sum_total_top = 0.;
-          double sum_total_bot = 0.;
-          for(int s = 0; s < 2; s++) {
-            sum_total_top += messages[A3_TO_I(w, u, s)] * omega[2*s+r];
-            sum_total_bot += mprob[A2_TO_I(w, s)] * (1-omega[2*s+r]);
-          }
-          prod_total += log(sum_total_top) - log(sum_total_bot);
-        }
-        messages[A3_TO_I(u,v,r)] = field[r] * exp(prod_total);
-        total += messages[A3_TO_I(u,v,r)];
-      }
-      // Normalize!
-      messages[A3_TO_I(u,v,0)] /= total;
-      messages[A3_TO_I(u,v,1)] /= total;
-    }
-  }
-}
+} 
 
 void calc_messages_f() {
   for(int u = 0; u < nodes; u++) {
@@ -146,8 +129,8 @@ void calc_messages_f() {
       double sum_total_bot[2] = {0,0};
       for(int r = 0; r < 2; r++) {
         for(int s = 0; s < 2; s++) {
-          sum_total_top[r] += messages[A3_TO_I(w, u, s)] * omega[2*s+r];
-          sum_total_bot[r] += mprob[A2_TO_I(w, s)] * (1-omega[2*s+r]);
+          sum_total_top[r] += messages[w][u][s] * omega[2*s+r];
+          sum_total_bot[r] += mprob[w][s] * (1-omega[2*s+r]);
         }
         rhs_total[r] += log(sum_total_top[r]) - log(sum_total_bot[r]);
       }
@@ -172,66 +155,34 @@ void calc_messages_f() {
         double sum_total_bot = 0.;
         for(int s = 0; s < 2; s++) {
           double prob = (adj ? omega[2*r+s] : 1 - omega[2*r+s]);
-          sum_total_top += messages[A3_TO_I(v, u, s)] * prob;
-          sum_total_bot += mprob[A2_TO_I(v, s)] * (1-omega[2*s+r]);
+          sum_total_top += messages[v][u][s] * prob;
+          sum_total_bot += mprob[v][s] * (1-omega[2*s+r]);
         }
 
-        messages[A3_TO_I(u,v,r)] = field[r] * exp(rhs_total[r] - log(sum_total_top)
+        messages[u][v][r] = field[r] * exp(rhs_total[r] - log(sum_total_top)
                                                   + log(sum_total_bot));
         new_mprob[r] += log(sum_total_top);
-        total += messages[A3_TO_I(u,v,r)];
+        total += messages[u][v][r];
       }
       // Normalize!
-      messages[A3_TO_I(u,v,0)] /= total;
-      messages[A3_TO_I(u,v,1)] /= total;
+      messages[u][v][0] /= total;
+      messages[u][v][1] /= total;
     }
-    double old_mprob[2] = {mprob[A2_TO_I(u,0)], mprob[A2_TO_I(u,1)]};
+    double old_mprob[2] = {mprob[u][0], mprob[u][1]};
     // Normalize!
     new_mprob[0] = exp(new_mprob[0]);
     new_mprob[1] = exp(new_mprob[1]);
     for(int r = 0; r < 2; r++) {
-      mprob[A2_TO_I(u,r)] = new_mprob[r] / (new_mprob[0] + new_mprob[1]);
+      mprob[u][r] = new_mprob[r] / (new_mprob[0] + new_mprob[1]);
     }
     // Adjust field!
     for(int r = 0; r < 2; r++) {
       double old_sum = old_mprob[0] * (1-omega[2*0+r]) 
                      + old_mprob[1] * (1-omega[2*1+r]);
-      double new_sum = mprob[A2_TO_I(u,0)] * (1-omega[2*0+r])
-                     + mprob[A2_TO_I(u,1)] * (1-omega[2*1+r]);
+      double new_sum = mprob[u][0] * (1-omega[2*0+r])
+                     + mprob[u][1] * (1-omega[2*1+r]);
       //printf("sum_dif: %f\n", new_sum/old_sum);
       field[r] *= new_sum / old_sum;
     }
-  }
-}
-
-void calc_mprob() {
-  for(int u = 0; u < nodes; u++) { 
-    double total = 0;
-    for(int r = 0; r < 2; r++) {
-      double prod_total = 0;
-      for(int w = 0; w < nodes; w++) {
-        if(w == u) continue;
-        bool adj = false;
-        for(int index = 0; index < graph[u].size(); ++index) {
-          if(graph[u][index] == w) {
-            adj = true;
-            break;
-          }
-        }
-        //if(std::find(graph[u].begin(), graph[u].end(), w) != graph[u].end())
-          //adj = true;
-        double sum_total = 0;
-        for(int s = 0; s < 2; s++) {
-          double prob = (adj ? omega[2*r+s] : 1 - omega[2*r+s]);
-          sum_total += messages[A3_TO_I(w,u,s)] * prob;
-        }
-        prod_total += log(sum_total);
-      }
-      mprob[A2_TO_I(u,r)] = exp(prod_total);
-      total += mprob[A2_TO_I(u,r)];
-    }
-    // Normalize!
-    mprob[A2_TO_I(u,0)] /= total;
-    mprob[A2_TO_I(u,1)] /= total;
   }
 }
