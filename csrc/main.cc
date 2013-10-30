@@ -1,6 +1,6 @@
 #include "main.h"
 
-const int n = 1000;
+const int n = 5000;
 const int nodes = 2*n;
 
 
@@ -79,6 +79,10 @@ int main(int argc, char* argv[]) {
     for(int loop = 0; loop < 2; loop++) {
       // compute messages, mprob, and update field
       calc_messages_f();
+      for(int i = 0; i < nodes; i+=1000) {
+        printf("mprob: %f\n", mprob[i][0]);
+      }
+      printf("\n");
     }
     printf("cycles5: %d\n", (int)(clock() - t));
     t = clock();

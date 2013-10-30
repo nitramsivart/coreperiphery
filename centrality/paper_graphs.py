@@ -12,12 +12,38 @@ def hashi_eig(A, degrees):
   I = sp.identity(A.shape[0])
   I_minus_D = sp.lil_matrix(A.shape)
   deg_list = list(degrees)
-  for node,deg in deg_list:
+  for node,(_,deg) in enumerate(deg_list):
     I_minus_D[node,node] = 1.0-deg
   crazy = sp.bmat([[None,I],[I_minus_D,A]])
   eig = lin.eigs(crazy, k=1, which="LR")[1][:len(deg_list),0]
   root_total = np.sqrt(sum(x*x for x in eig))
   return [x/root_total for x in eig]
+
+def hashi_eigval(A, degrees):
+  I = sp.identity(A.shape[0])
+  I_minus_D = sp.lil_matrix(A.shape)
+  deg_list = list(degrees)
+  for node,(_,deg) in enumerate(deg_list):
+    I_minus_D[node,node] = 1.0-deg
+  crazy = sp.bmat([[None,I],[I_minus_D,A]])
+  print lin.eigs(crazy, k=1, which="LR",return_eigenvectors=False)[0]
+
+def tree_hashi_eig(A, G):
+  DG = DiGraph(G)
+  B = DiGraph()
+  for e1 in DG.edges_iter():
+    for e2 in DG.edges_iter():
+      k, l = e1
+      i, j = e2
+      if j == k and i != l:
+        B.add_edge(e1, e2)
+  #print 1./lin.eigs(to_scipy_sparse_matrix(B,dtype='d'),k=1,which='LR',
+  #                  return_eigenvectors=False,maxiter=100000)[0]
+  centrality = katz_centrality(B, alpha=.0001, normalized=True)
+  eig = [sum([centrality[(k, i)] for k in G[i]]) for i in G.nodes()]
+  return eig
+  #print eig
+  
 
 def check_crossover(hashi=False):
   runs = 1
@@ -610,11 +636,97 @@ def process(str_list):
   plt.scatter(x, data)
   plt.show()
 
+def make_tree():
+  G = Graph()
+  G.add_node(0)
+  #'''
+  n_i = 7
+  n_j = 5
+  n_k = 4
+  n_l = 3
+  n_m = 2
+  n_n = 1
+  '''
+  n_i = 2
+  n_j = 2
+  n_k = 3
+  n_l = 4
+  n_m = 5
+  n_n = 6
+  '''
 
+  for i in range(1,1+n_i):
+    G.add_node(i)
+    G.add_edge(0,i)
+    for j in range(1,1+n_j):
+      cur_j = int('%d%d'%(i,j))
+      G.add_node(cur_j)
+      G.add_edge(i, cur_j)
+      for k in range(1,1+n_k):
+        cur_k = int('%d%d'%(cur_j,k))
+        G.add_node(cur_k)
+        G.add_edge(cur_j, cur_k)
+        for l in range(1,1+n_l):
+          cur_l = int('%d%d'%(cur_k,l))
+          G.add_node(cur_l)
+          G.add_edge(cur_k, cur_l)
+          for m in range(1,1+n_m):
+            cur_m = int('%d%d'%(cur_l,m))
+            G.add_node(cur_m)
+            G.add_edge(cur_l, cur_m)
+            for n in range(1,1+n_n):
+              cur_n = int('%d%d'%(cur_m,n))
+              G.add_node(cur_n)
+              G.add_edge(cur_m, cur_n)
+  return G
+
+def tree(num = 1000):
+  #leaves = 2 + 2*num 
+  #seq = ([4] * (num/2)) + ([4] * (num/2)) + ([1]*leaves)
+  '''
+  seq = []
+  for i in range(1,7):
+    seq += ([i] * 6)
+  print seq
+  num = 6 * 6
+  edges = sum(seq) / 2
+  leaves = 2 * (1 + edges - num)
+  seq += [1]*leaves
+  '''
+  #print seq
+  #G = degree_sequence_tree(seq)
+  #G = balanced_tree(7, 5)
+  #G = random_powerlaw_tree(num, tries=1000000)
+  G = make_tree()
+  print len(G.nodes())
+  A = to_scipy_sparse_matrix(G, dtype='d')
+  deg = [d for x,d in G.degree_iter()]
+  eig = np.absolute(lin.eigsh(A, k=1, which='LA')[1][:,0])
+  print "done eig"
+  #eigh = np.absolute(hashi_eig(A, G.degree_iter()))
+  #hashi_eigval(A, G.degree_iter())
+  eigh = np.absolute(tree_hashi_eig(A, G))
+  t_deg = []
+  t_eig = []
+  t_eigh = []
+  for i,(_,d) in enumerate(G.degree_iter()):
+    if d < 10:
+      t_deg.append(deg[i])
+      t_eig.append(eig[i])
+      t_eigh.append(eigh[i])
+  plt.scatter(t_deg, t_eig, c='r')
+  plt.scatter(t_deg, t_eigh)
+  #plt.show()
+  #plt.scatter(deg, eigh)
+  #plt.figure()
+  #networkx.draw_graphviz(G, 'dot')
+  plt.show()
+
+tree()
 #interact(1000000)
 #mega(1000000)
 #write_to_file(1000000)
-simplest_power_law(1000000)
+#simplest_power_law(1000000)
 #mega(2000000)
 #cProfile.run('interact()')
 #interact()
