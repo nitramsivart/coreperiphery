@@ -16,16 +16,17 @@ std::vector<std::vector<int> > graph(nodes);
 int main(int argc, char* argv[]) {
   // Allocate messages, mprob arrays
   srand(time(NULL));
-  double C_cc = 80;
-  double C_cp = 50;
-  double C_pp = 20;
-  for(; C_pp < 21; ) {
-    C_pp++;
-    C_cc--;
-    omega[0] = C_cp/n;
+  double C_cc = 36;
+  double C_cp = 32;
+  double C_pp = 38;
+  for(int loop = 0; loop < 2; loop++) {
+    //C_pp+=3;
+    C_cc+=1;
+    //C_cp-=3;
+    omega[0] = C_cc/n;
     omega[1] = C_cp/n;
     omega[2] = C_cp/n;
-    omega[3] = C_cp/n;
+    omega[3] = C_pp/n;
     eta[0] = .5;
     eta[1] = .5;
 
@@ -50,26 +51,42 @@ int main(int argc, char* argv[]) {
     }
 
     // initialize messages and mprob
-    double a = .60;
+    double a = .51;
     for(int i = 0; i < nodes; i++) {
       mprob[i] = a;
-      for(int j = 0; j < graph[i].size(); j++)
-        messages[PAIR(i,j)]=a;
+      for(int j = 0; j < graph[i].size(); j++) {
+        messages[PAIR(i,graph[i][j])]=a;
+        messages[PAIR(graph[i][j],i)]=a;
+      }
       
     }
 
     // compute field
     calc_field();
-    for(int outerloop = 0; outerloop < 3; outerloop++) {
-      for(int loop = 0; loop < 1; loop++) {
+    //printf("field: %f, %f\n", field[0], field[1]);
+    double total = 0;
+    //for(int outerloop = 0; outerloop < 1; outerloop++) {
+      for(int innerloop = 0; innerloop < 10; innerloop++) {
         // compute messages, mprob, and update field
         calc_messages_f();
+        double new_total = 0;
+        for(int i = 0; i < nodes; i+=10000) {
+          new_total += mprob[i];
+          printf("mprob %f\n", mprob[i]);
+        }
+        //if(std::abs(new_total - total) < .0000001) {
+        if(std::abs(new_total - .5*(nodes/10000)) < .0000001) {
+          printf("breaking: %f,%f,%f\n", new_total, total, std::abs(new_total-total));
+          break;
+        }
+        else {
+          printf("diff: %f\n", new_total - total);
+          total = new_total;
+        }
       }
-      for(int i = 0; i < nodes; i+=10000)
-        printf("mprob %f\n", mprob[i]);
-      calc_omega();
-    }
-    printf("cycles: %d\n", (int)(clock() - t));
+      //calc_omega();
+    //}
+    //printf("cycles: %d\n", (int)(clock() - t));
 
     int correct = 0;
     for(int i = 0; i < nodes; i++)
@@ -108,14 +125,37 @@ void calc_messages_f() {
       
       double sum_total_top[2] = {0,0};
       double sum_total_bot[2] = {0,0};
+      //assert(COND_INV(0,messages[PAIR(w,u)]) * omega[2*0+0] + COND_INV(1,messages[PAIR(w,u)]) * omega[2*1+0] ==
+             //COND_INV(0,messages[PAIR(w,u)]) * omega[2*0+1] + COND_INV(1,messages[PAIR(w,u)]) * omega[2*1+1]);
+             //COND_INV(s,messages[PAIR(w,u)]) * omega[2*s+1]);
+      //assert(COND_INV(0,mprob[w]) * (1-omega[2*0+0]) + COND_INV(1,mprob[w]) * (1-omega[2*1+0]) ==
+             //COND_INV(0,mprob[w]) * (1-omega[2*0+1]) + COND_INV(1,mprob[w]) * (1-omega[2*1+1]));
+             //COND_INV(s,mprob[w]) * (1-omega[2*s+1]));
+      double assert_totals[2] = {0,0};
       for(int r = 0; r < 2; r++) {
         for(int s = 0; s < 2; s++) {
           sum_total_top[r] += COND_INV(s,messages[PAIR(w,u)]) * omega[2*s+r];
+          assert_totals[r] += COND_INV(s,messages[PAIR(w,u)]) * omega[2*s+r];
           sum_total_bot[r] += COND_INV(s,mprob[w]) * (1-omega[2*s+r]);
         }
         rhs_total[r] += log(sum_total_top[r]) - log(sum_total_bot[r]);
       }
+      /*
+      if(assert_totals[0] != assert_totals[1]) {
+        printf("assert_totals: %f, %f\n", assert_totals[0], assert_totals[1]);
+      }
+
+      if(messages[PAIR(w,u)] != .5)
+        printf("unequal messages: %f, %d, %d\n", messages[PAIR(w,u)], w, u);
+      assert(messages[PAIR(w,u)] == .5);
+      assert(COND_INV(0,messages[PAIR(w,u)]) == COND_INV(1,messages[PAIR(w,u)]));
+      assert(omega[0+0] == omega[2+1]);
+      assert(omega[2+0] == omega[0+1]);
+      assert(assert_totals[0] == assert_totals[1]);
+      */
     }
+
+    //printf("rhs_total: %f, %f\n", rhs_total[0], rhs_total[1]);
 
     // compute messages for all neighbors
     for(int i_v = 0; i_v < nbrs.size(); i_v++) {
@@ -126,25 +166,38 @@ void calc_messages_f() {
         double sum_total_top = 0;
         double sum_total_bot = 0;
         for(int s = 0; s < 2; s++) {
-          sum_total_top += COND_INV(s,messages[PAIR(v,u)]) * omega[2*r+s];
+          /*
+          assert(COND_INV(s,messages[PAIR(v,u)]) * omega[2*s+0] ==
+                 COND_INV(s,messages[PAIR(v,u)]) * omega[2*s+1]);
+          assert(COND_INV(s,mprob[v]) * (1-omega[2*s+0]) ==
+                 COND_INV(s,mprob[v]) * (1-omega[2*s+1]));
+                 */
+          sum_total_top += COND_INV(s,messages[PAIR(v,u)]) * omega[2*s+r];
           sum_total_bot += COND_INV(s,mprob[v]) * (1-omega[2*s+r]);
         }
 
-        tmessages[r] = eta[r] * exp(field[r] + rhs_total[r] - log(sum_total_top)
-                                                              + log(sum_total_bot));
+        tmessages[r] = eta[r] * exp(field[r] - field[1] + rhs_total[r] - rhs_total[1]
+                                    - log(sum_total_top) + log(sum_total_bot));
       }
       // Normalize messages!
       messages[PAIR(u,v)] = tmessages[0] / (tmessages[0]+tmessages[1]);
-      if(tmessages[0] == 0 && tmessages[1] == 0)
-        messages[PAIR(u,v)] = (field[0] + tmessages[0] > field[1] + rhs_total[1]);
+      //assert(messages[PAIR(u,v)] == .5);
+      //printf("tmessages: %f, %f, %f\n", tmessages[0], tmessages[1], messages[PAIR(u,v)]);
+      if(tmessages[0] == 0 && tmessages[1] == 0) {
+        printf("both zero, %f, %f\n", rhs_total[0], rhs_total[1]);
+        messages[PAIR(u,v)] = (field[0] + rhs_total[0] > field[1] + rhs_total[1]);
+        //assert(messages[PAIR(u,v)] == .5);
+      }
     }
     // Normalize mprob!
     double old_mprob = mprob[u];
-    double mprob0 = eta[0] * exp(field[0]+rhs_total[0]);
-    double mprob1 = eta[1] * exp(field[1]+rhs_total[1]);
+    double mprob0 = eta[0] * exp(field[0]-field[1]+rhs_total[0]-rhs_total[1]);
+    double mprob1 = eta[1] * exp(0);
     mprob[u] = mprob0 / (mprob0 + mprob1);
-    if(mprob0 == 0 && mprob0 == mprob1)
+    if(mprob0 == 0 && mprob0 == mprob1) {
+      printf("error handling, %f %f\n", rhs_total[0], rhs_total[1]);
       mprob[u] = (field[0] + rhs_total[0] > field[1] + rhs_total[1]);
+    }
 
     //printf("mprobs: %f,%f,%f,%f,%d,%d,%f\n", field[0],rhs_total[0],field[1],rhs_total[1],mprob0>mprob1, mprob1>mprob0,mprob[u]);
     //if(isnan(field[0]))
@@ -156,6 +209,7 @@ void calc_messages_f() {
                      + (1-old_mprob) * (1-omega[2*1+r]);
       double new_sum = mprob[u] * (1-omega[2*0+r])
                      + (1-mprob[u]) * (1-omega[2*1+r]);
+      //assert(old_sum == new_sum);
       //printf("sum_dif: %f\n", new_sum/old_sum);
       field[r] += log(new_sum) - log(old_sum);
     }
@@ -163,7 +217,6 @@ void calc_messages_f() {
 }
 
 void calc_omega() {
-  printf("calculating omega\n");
   double omega_top[4] = {0,0,0,0};
   eta[0] = 0;
   eta[1] = 0;
@@ -197,7 +250,6 @@ void calc_omega() {
     assert(eta[r] != 0);
     for(int s = 0; s < 2; s++) {
       omega[2*s+r] = omega_top[2*s+r] / (eta[r] * eta[s]);
-      printf("omega[%d][%d]: %f,%f,%f\n", r,s,n*omega[2*s+r],eta[r],omega_top[2*s+r]);
     }
   }
   // Finalize eta
