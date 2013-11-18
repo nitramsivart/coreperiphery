@@ -4,30 +4,11 @@ import scipy.sparse.linalg as lin
 import scipy.sparse as sp
 import numpy as np
 import matplotlib.pylab as plt
-import time
-import glob
-import cProfile
 import random
+from apgl.generator.ErdosRenyiGenerator import *
+from apgl.graph.VertexList import VertexList
+from apgl.graph.SparseGraph import SparseGraph
 
-def hashi_eig(A, degrees):
-  I = sp.identity(A.shape[0])
-  I_minus_D = sp.lil_matrix(A.shape)
-  deg_list = list(degrees)
-  for node,(_,deg) in enumerate(deg_list):
-    I_minus_D[node,node] = 1.0-deg
-  crazy = sp.bmat([[None,I],[I_minus_D,A]])
-  eig = lin.eigs(crazy, k=1, which="LR")[1][:len(deg_list),0]
-  root_total = np.sqrt(sum(x*x for x in eig))
-  return [x/root_total for x in eig]
-
-def hashi_eigval(A, degrees):
-  I = sp.identity(A.shape[0])
-  I_minus_D = sp.lil_matrix(A.shape)
-  deg_list = list(degrees)
-  for node,(_,deg) in enumerate(deg_list):
-    I_minus_D[node,node] = 1.0-deg
-  crazy = sp.bmat([[None,I],[I_minus_D,A]])
-  print(lin.eigs(crazy, k=1, which="LR",return_eigenvectors=False)[0])
 
 c = 6.
 d = 100
@@ -95,8 +76,15 @@ for n in n_arr:
   dot = 0
   diff = 0
   for dummy in range(trials):
-    A = to_scipy_sparse_matrix(erdos_renyi_graph(n, c/n))
+    print('a')
+    #A = to_scipy_sparse_matrix(erdos_renyi_graph(n, c/n))
+    A = sp.rand(n,n,c/n)
+    A = A / A
+    A = sp.triu(A)
+    A = A + A.T
+    print('b')
     a = np.random.binomial(1,d/n,size=(n,1))
+    print('c')
     a_T = np.transpose(a)
     #X = A - center
     #B = sp.bmat([[X,a],[a_T, None]], dtype='d')
